@@ -58,19 +58,19 @@ source-backed rows for things UFCStats does not represent cleanly, such as
 controversial decisions, injury finishes, short-notice fights, weight misses,
 division moves, and major layoffs.
 
-Build the first-pass rankings model:
+Build the context-calibrated rankings model:
 
 ```bash
 npm run model:rankings
 ```
 
-The model currently writes generated rankings and fight-impact files to
+The model writes generated rankings, score breakdowns, and fight-impact files to
 `data/model/`. Those files are ignored by git because they are reproducible from
 the scraped UFCStats data plus manual annotations.
 
 ## Project Status
 
 This is an early frontend and modeling prototype. The frontend still uses
-hardcoded ranking data, while the first-pass model is a separate generated
-pipeline under `scripts/build-rankings-model.mjs`. The methodology content in
-the app is not final and is marked as placeholder where appropriate.
+hardcoded ranking data, while the context-calibrated model is a separate
+generated pipeline under `scripts/build-rankings-model.mjs`. The methodology
+content in the app is not final and is marked as placeholder where appropriate.
