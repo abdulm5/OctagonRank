@@ -43,6 +43,34 @@ Build for production:
 npm run build
 ```
 
+Scrape UFCStats completed fights from January 1, 2000 through June 24, 2026:
+
+```bash
+npm run scrape:ufcstats
+```
+
+The scraper writes JSON and CSV files to `data/ufcstats/`, including events,
+fights, per-fighter fight totals, per-round stats, and fighter profile stats.
+That output directory is ignored by git because a full scrape can be large.
+
+Manual fight-context annotations live in `data/manual_annotations/`. These are
+source-backed rows for things UFCStats does not represent cleanly, such as
+controversial decisions, injury finishes, short-notice fights, weight misses,
+division moves, and major layoffs.
+
+Build the first-pass rankings model:
+
+```bash
+npm run model:rankings
+```
+
+The model currently writes generated rankings and fight-impact files to
+`data/model/`. Those files are ignored by git because they are reproducible from
+the scraped UFCStats data plus manual annotations.
+
 ## Project Status
 
-This is an early frontend prototype. Ranking data and fighter stats are currently stored directly in the React code. The methodology content is not final and is marked as placeholder where appropriate in the app.
+This is an early frontend and modeling prototype. The frontend still uses
+hardcoded ranking data, while the first-pass model is a separate generated
+pipeline under `scripts/build-rankings-model.mjs`. The methodology content in
+the app is not final and is marked as placeholder where appropriate.

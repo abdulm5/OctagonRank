@@ -6,16 +6,18 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "scrape:ufcstats": "node scripts/scrape-ufcstats.mjs",
+    "model:rankings": "node scripts/build-rankings-model.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
+    "cheerio": "^1.2.0",
     "framer-motion": "^12.23.0",
     "lucide-react": "^0.468.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "recharts": "^3.0.0",
     "vite": "^7.0.0"
-  },
-  "devDependencies": {}
+  }
 }

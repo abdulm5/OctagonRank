@@ -1,0 +1,238 @@
+{
+  "source": "Current project ranking snapshot",
+  "as_of": "2026-06-24",
+  "notes": "Used by the model as current division context: champion status, active ranked pool, and division transfers. This is not the scoring formula.",
+  "divisions": [
+    {
+      "division": "Flyweight",
+      "champion": "Joshua Van",
+      "rankings": [
+        "Alexandre Pantoja",
+        "Brandon Royval",
+        "Tatsuro Taira",
+        "Manel Kape",
+        "Charles Johnson",
+        "Kyoji Horiguchi",
+        "Loneer Kavanagh",
+        "Brandon Moreno",
+        "Amir Albazi",
+        "Asu Almabayev",
+        "Steve Erceg",
+        "Alex Perez",
+        "Sumudaerji",
+        "Mitch Raposo",
+        "Kevin Borjas"
+      ]
+    },
+    {
+      "division": "Bantamweight",
+      "champion": "Petr Yan",
+      "rankings": [
+        "Merab Dvalishvili",
+        "Sean O'Malley",
+        "Umar Nurmagomedov",
+        "Cory Sandhagen",
+        "Raoni Barcelos",
+        "Mario Bautista",
+        "Song Yadong",
+        "Payton Talbott",
+        "David Martinez",
+        "Marcus McGhee",
+        "Farid Basharat",
+        "Deiveson Figueiredo",
+        "Aiemann Zahabi",
+        "Bryce Mitchell",
+        "Montel Jackson"
+      ]
+    },
+    {
+      "division": "Featherweight",
+      "champion": "Alexander Volkanovski",
+      "rankings": [
+        "Movsar Evloev",
+        "Diego Lopes",
+        "Lerone Murphy",
+        "Aljamain Sterling",
+        "Jean Silva",
+        "Arnold Allen",
+        "Nathaniel Wood",
+        "Youssef Zalal",
+        "Kevin Vallejos",
+        "Steve Garcia",
+        "Pat Sabatini",
+        "Yair Rodriguez",
+        "Melquizael Costa",
+        "Aaron Pico",
+        "Jose Miguel Delgado"
+      ]
+    },
+    {
+      "division": "Lightweight",
+      "champion": "Justin Gaethje",
+      "rankings": [
+        "Ilia Topuria",
+        "Arman Tsarukyan",
+        "Charles Oliveira",
+        "Max Holloway",
+        "Benoit Saint Denis",
+        "Mateusz Gamrot",
+        "Mauricio Ruffy",
+        "Paddy Pimblett",
+        "Renato Moicano",
+        "Dan Hooker",
+        "Rafael Fiziev",
+        "Quillan Salkilld",
+        "Beneil Dariush",
+        "Tom Nolan",
+        "Manuel Torres"
+      ]
+    },
+    {
+      "division": "Welterweight",
+      "champion": "Islam Makhachev",
+      "rankings": [
+        "Ian Machado Garry",
+        "Carlos Prates",
+        "Michael Morales",
+        "Jack Della Maddalena",
+        "Sean Brady",
+        "Gabriel Bonfim",
+        "Belal Muhammad",
+        "Leon Edwards",
+        "Kamaru Usman",
+        "Joaquin Buckley",
+        "Yaroslav Amosov",
+        "Mike Malott",
+        "Michael Venom Page",
+        "Uros Medic",
+        "Daniel Rodriguez"
+      ]
+    },
+    {
+      "division": "Middleweight",
+      "champion": "Sean Strickland",
+      "rankings": [
+        "Khamzat Chimaev",
+        "Dricus Du Plessis",
+        "Nassourdine Imavov",
+        "Brendan Allen",
+        "Anthony Hernandez",
+        "Caio Borralho",
+        "Joe Pyfer",
+        "Israel Adesanya",
+        "Reinier De Ridder",
+        "Jared Cannonier",
+        "Gregory Rodrigues",
+        "Christian Leroy Duncan",
+        "Bo Nickal",
+        "Paulo Costa",
+        "Ikram Aliskerov"
+      ]
+    },
+    {
+      "division": "Light Heavyweight",
+      "champion": "Carlos Ulberg",
+      "rankings": [
+        "Magomed Ankalaev",
+        "Alex Pereira",
+        "Jiri Prochazka",
+        "Khalil Rountree Jr.",
+        "Jamahal Hill",
+        "Jan Blachowicz",
+        "Paulo Costa",
+        "Dominick Reyes",
+        "Azamat Murzakanov",
+        "Volkan Oezdemir",
+        "Bogdan Guskov",
+        "Dustin Jacoby",
+        "Johnny Walker",
+        "Alonzo Menifield",
+        "Navajo Stirling"
+      ]
+    },
+    {
+      "division": "Heavyweight",
+      "champion": "Tom Aspinall",
+      "rankings": [
+        "Ciryl Gane",
+        "Alexander Volkov",
+        "Sergei Pavlovich",
+        "Curtis Blaydes",
+        "Rizvan Kuniev",
+        "Serghei Spivac",
+        "Waldo Cortes-Acosta",
+        "Josh Hokit",
+        "Vitor Petrino",
+        "Tyrell Fortune",
+        "Ante Delija",
+        "Valter Walker",
+        "Brando Pericic",
+        "Mario Pinto",
+        "Mick Parkin"
+      ]
+    },
+    {
+      "division": "Women's Strawweight",
+      "champion": "Mackenzie Dern",
+      "rankings": [
+        "Zhang Weili",
+        "Tatiana Suarez",
+        "Virna Jandiroba",
+        "Yan Xiaonan",
+        "Gillian Robertson",
+        "Loopy Godinez",
+        "Amanda Lemos",
+        "Tabatha Ricci",
+        "Jéssica Andrade",
+        "Amanda Ribas",
+        "Fatima Kline",
+        "Angela Hill",
+        "Denise Gomes",
+        "Alexia Thainara",
+        "Mizuki"
+      ]
+    },
+    {
+      "division": "Women's Flyweight",
+      "champion": "Valentina Shevchenko",
+      "rankings": [
+        "Natalia Silva",
+        "Manon Fiorot",
+        "Alexa Grasso",
+        "Erin Blanchfield",
+        "Rose Namajunas",
+        "Maycee Barber",
+        "Jasmine Jasudavicius",
+        "Tracy Cortez",
+        "Miranda Maverick",
+        "Karine Silva",
+        "Casey O'Neill",
+        "Wang Cong",
+        "Eduarda Moura",
+        "JJ Aldrich",
+        "Gabriella Fernandes"
+      ]
+    },
+    {
+      "division": "Women's Bantamweight",
+      "champion": "Kayla Harrison",
+      "rankings": [
+        "Joselyne Edwards",
+        "Norma Dumont",
+        "Luana Santos",
+        "Julianna Peña",
+        "Ailin Perez",
+        "Yana Santos",
+        "Jacqueline Cavalcanti",
+        "Michelle Montague",
+        "Melissa Croden",
+        "Karol Rosa",
+        "Bia Mesquita",
+        "Irene Aldana",
+        "Macy Chiasson",
+        "Daria Zhelezniakova",
+        "Raquel Pennington"
+      ]
+    }
+  ]
+}
