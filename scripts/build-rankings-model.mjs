@@ -17,6 +17,12 @@ const DEFAULTS = {
 
 const HEAD_TO_HEAD_WINDOW_MONTHS = 24;
 const HEAD_TO_HEAD_SCORE_WINDOW = 45;
+const STRICT_HEAD_TO_HEAD_WINDOW_MONTHS = 12;
+const STRICT_HEAD_TO_HEAD_SCORE_WINDOW = 120;
+const ELITE_HEAD_TO_HEAD_WINDOW_MONTHS = 36;
+const ELITE_HEAD_TO_HEAD_SCORE_WINDOW = 80;
+const OLD_FIGHTER_AGE = 36;
+const VERY_OLD_FIGHTER_AGE = 39;
 
 const CURRENT_DIVISIONS = [
   "Flyweight",
@@ -68,10 +74,11 @@ async function main() {
   const outDir = path.resolve(process.cwd(), args.outDir);
   await fs.mkdir(outDir, { recursive: true });
 
-  const [summary, fights, fightStats, annotations, currentSnapshot, titleContext] = await Promise.all([
+  const [summary, fights, fightStats, fighters, annotations, currentSnapshot, titleContext] = await Promise.all([
     readJson(path.join(dataDir, "summary.json")),
     readJson(path.join(dataDir, "fights.json")),
     readJson(path.join(dataDir, "fight_fighter_stats.json")),
+    readJson(path.join(dataDir, "fighters.json")),
     readAnnotations(path.resolve(process.cwd(), args.annotationsPath)),
     readCurrentSnapshot(path.resolve(process.cwd(), args.currentSnapshotPath)),
     readTitleContext(path.resolve(process.cwd(), args.titleContextPath)),
@@ -79,6 +86,8 @@ async function main() {
 
   const currentDivisionSet = new Set(CURRENT_DIVISIONS);
   const statsByFight = groupFightStats(fightStats);
+  const fighterProfiles = new Map(fighters.map((fighter) => [fighter.fighter_id, fighter]));
+  const titleContextByFighter = buildTitleContextByFighter(titleContext);
   const annotationsByFight = new Map(annotations.map((annotation) => [annotation.fight_id, annotation]));
   const asOfDate = new Date(summary.end_date ?? latestDate(fights));
 
@@ -100,6 +109,8 @@ async function main() {
       statsForFight: statsByFight.get(fight.fight_id),
       annotation: annotationsByFight.get(fight.fight_id),
       divisionRatings,
+      fighterProfiles,
+      titleContextByFighter,
       args,
     });
 
@@ -130,6 +141,8 @@ async function main() {
       raw_score: fighter.raw_score,
       model_score: fighter.model_score,
       current_context_prior: fighter.current_context_prior,
+      entry_gate_penalty: fighter.entry_gate_penalty,
+      entry_gate_status: fighter.entry_gate_status,
       title_context_adjustment: fighter.title_context_adjustment,
       title_context_status: fighter.title_context_status,
       title_context_target_rank: fighter.title_context_target_rank,
@@ -144,6 +157,7 @@ async function main() {
       recent_activity_adjustment: fighter.recent_activity_adjustment,
       dominance_adjustment: fighter.dominance_adjustment,
       finish_adjustment: fighter.finish_adjustment,
+      title_win_adjustment: fighter.title_win_adjustment,
       quality_win_adjustment: fighter.quality_win_adjustment,
       inactivity_penalty: fighter.inactivity_penalty,
       legacy_penalty: fighter.legacy_penalty,
@@ -151,6 +165,9 @@ async function main() {
       recent_fights_30m: fighter.recent_fights_30m,
       recent_rating_change_30m: fighter.recent_rating_change_30m,
       best_win_age_months: fighter.best_win_age_months,
+      best_win_opponent_age: fighter.best_win?.opponent_age_at_fight ?? "",
+      best_win_opponent_form_score: fighter.best_win?.opponent_form_score ?? "",
+      best_win_adjusted_rating: fighter.best_win?.adjusted_opponent_rating ?? "",
       ufc_division_fights: fighter.ufc_division_fights,
       division_record: fighter.division_record,
       last_fight_date: fighter.last_fight_date,
@@ -162,7 +179,7 @@ async function main() {
   );
 
   const output = {
-    model_version: "v0.6-ranking-policy-layer",
+    model_version: "v0.7-opponent-context-audits",
     generated_at: new Date().toISOString(),
     as_of: toIsoDate(asOfDate),
     source: summary.source ?? "ufcstats.com",
@@ -170,6 +187,7 @@ async function main() {
       events: summary.event_count,
       fights: summary.fight_count,
       fighter_stat_rows: summary.fighter_stat_rows,
+      fighters: summary.fighter_count,
       annotations: annotations.length,
       current_snapshot_divisions: currentSnapshot?.divisions?.length ?? 0,
       title_context_divisions: titleContext?.divisions?.length ?? 0,
@@ -182,12 +200,17 @@ async function main() {
       current_divisions: CURRENT_DIVISIONS,
       current_snapshot_path: args.currentSnapshotPath,
       title_context_path: args.titleContextPath,
+      strict_head_to_head_window_months: STRICT_HEAD_TO_HEAD_WINDOW_MONTHS,
+      strict_head_to_head_score_window: STRICT_HEAD_TO_HEAD_SCORE_WINDOW,
+      elite_head_to_head_window_months: ELITE_HEAD_TO_HEAD_WINDOW_MONTHS,
+      elite_head_to_head_score_window: ELITE_HEAD_TO_HEAD_SCORE_WINDOW,
       head_to_head_window_months: HEAD_TO_HEAD_WINDOW_MONTHS,
       head_to_head_score_window: HEAD_TO_HEAD_SCORE_WINDOW,
     },
     methodology: {
       base_rating: "Division-specific Elo rating updated chronologically after each fight.",
       opponent_strength: "Built into Elo: beating a higher-rated opponent creates a larger rating gain.",
+      opponent_context: "Opponent quality is adjusted at fight time using age, recent form, recent activity, and losing streak context.",
       method_multiplier: "Finishes and clean decisions move ratings more than split decisions, DQs, or weird stoppages.",
       dominance_multiplier: "Significant strike differential, knockdowns, takedowns, control time, and submission attempts adjust the size of the update.",
       result_confidence: "Manual annotations and low-repeatability stat patterns dampen noisy outcomes without deleting the official result.",
@@ -195,13 +218,15 @@ async function main() {
       recent_activity_adjustment: "Fighters get a small positive bump for recent ranked activity before inactivity penalties are applied.",
       dominance_adjustment: "Average dominance across fights becomes a bounded score adjustment, not just a hidden Elo multiplier.",
       finish_adjustment: "A fighter's finish rate adds a small bonus, while low finish rates get a small penalty.",
+      title_win_adjustment: "Recent wins over fighters with title-lineage context add visible resume credit.",
       quality_win_adjustment: "The best win adds value based on opponent rating, with older best wins decayed.",
       inactivity_penalty: "Fighters keep rating value, but lose final-score confidence after 12 months without a fight.",
       legacy_penalty: "High raw ratings are dampened when they are supported mostly by older peak wins rather than recent ranked activity.",
       current_context: "A current division snapshot limits rankings to the active ranked pool and adds a smaller status prior instead of forcing contender order.",
+      entry_gate: "Low-evidence ranked entries receive a visible penalty when they lack ranked or quality wins.",
       title_context: "Manual title-lineage context protects recent title losers, former champions, and similar cases when the pure score overreacts.",
       rank_guard: "Current elite contenders are prevented from falling too far below their active divisional context; the guard adjustment is exposed.",
-      head_to_head: "Recent direct wins can move a fighter above a close-scored opponent they beat in the same division.",
+      head_to_head: "Recent direct wins can move a fighter above a close-scored opponent they beat in the same division, with a stricter one-year rule.",
       title_guard: "The current champion is kept above contenders in that division; the required adjustment is exposed in the output.",
     },
     divisions,
@@ -226,7 +251,7 @@ async function main() {
   printRunSummary({ outDir, divisions, fightImpacts, skipped });
 }
 
-function processFight({ fight, statsForFight, annotation, divisionRatings, args }) {
+function processFight({ fight, statsForFight, annotation, divisionRatings, fighterProfiles, titleContextByFighter, args }) {
   if (!fight.winner_fighter_id || fight.method === "Overturned") {
     return null;
   }
@@ -253,8 +278,15 @@ function processFight({ fight, statsForFight, annotation, divisionRatings, args 
   const dominance = calculateDominance(winnerStats, loserStats);
   const annotationContext = getAnnotationContext(annotation);
   const repeatability = getRepeatabilityMultiplier(fight, dominance);
+  const opponentContext = calculateOpponentContext({
+    opponent: loser,
+    opponentProfile: fighterProfiles.get(loserId),
+    opponentTitleContexts: titleContextByFighter.get(normalizeName(loserName)) ?? [],
+    fightDate: fight.event_date,
+    opponentPreRating: loserPreRating,
+  });
   const resultConfidence = clamp(annotationContext.multiplier * repeatability.multiplier, 0.25, 1.15);
-  const totalMultiplier = method.multiplier * dominance.multiplier * resultConfidence;
+  const totalMultiplier = method.multiplier * dominance.multiplier * resultConfidence * opponentContext.ratingMultiplier;
   const ratingChange = round(baseEloChange * totalMultiplier, 2);
 
   winner.rating += ratingChange;
@@ -271,6 +303,7 @@ function processFight({ fight, statsForFight, annotation, divisionRatings, args 
     stats: winnerStats,
     opponentStats: loserStats,
     dominanceScore: dominance.score,
+    opponentContext,
   });
 
   updateFighterAggregate({
@@ -284,6 +317,7 @@ function processFight({ fight, statsForFight, annotation, divisionRatings, args 
     stats: loserStats,
     opponentStats: winnerStats,
     dominanceScore: 100 - dominance.score,
+    opponentContext: null,
   });
 
   return {
@@ -304,6 +338,11 @@ function processFight({ fight, statsForFight, annotation, divisionRatings, args 
     method_reason: method.reason,
     dominance_score: dominance.score,
     dominance_multiplier: dominance.multiplier,
+    opponent_quality_multiplier: opponentContext.ratingMultiplier,
+    opponent_adjusted_rating: opponentContext.adjustedRating,
+    opponent_age_at_fight: opponentContext.ageAtFight,
+    opponent_form_score: opponentContext.formScore,
+    opponent_context_reason: opponentContext.reasons.join("|"),
     result_confidence: resultConfidence,
     annotation_tags: annotationContext.tags.join("|"),
     repeatability_reason: repeatability.reason,
@@ -414,6 +453,8 @@ function buildCurrentSnapshotRankings({
       current_snapshot_rank: entry.snapshotRank,
       current_snapshot_floor: null,
       current_context_prior: contextPrior,
+      entry_gate_penalty: 0,
+      entry_gate_status: "",
       title_context_adjustment: 0,
       title_context_status: "",
       title_context_target_rank: null,
@@ -427,7 +468,7 @@ function buildCurrentSnapshotRankings({
   });
 
   return applyHeadToHeadResolver(
-    applyRankDriftGuard(applyTitleContextPolicy(applyTitleGuard(candidates), titleContextDivision, asOfDate)),
+    applyRankDriftGuard(applyRankedEntryGate(applyTitleContextPolicy(applyTitleGuard(candidates), titleContextDivision, asOfDate))),
     divisionName,
     fightImpacts,
     asOfDate,
@@ -555,13 +596,62 @@ function getMaxAllowedRank(candidate) {
   return null;
 }
 
+function applyRankedEntryGate(candidates) {
+  const rankedNames = new Set(candidates.map((candidate) => normalizeName(candidate.fighter_name)));
+
+  for (const candidate of candidates) {
+    if (candidate.current_status === "Champion") continue;
+
+    const snapshotRank = Number(candidate.current_snapshot_rank);
+    if (!Number.isFinite(snapshotRank) || snapshotRank < 8) continue;
+
+    const rankedWins = countRankedWins(candidate, rankedNames);
+    const qualityWins = countQualityWins(candidate);
+    const bestAdjustedWin = num(candidate.best_win?.adjusted_opponent_rating);
+    const lowFightSample = candidate.ufc_division_fights < 4;
+
+    let penalty = 0;
+    let status = "";
+
+    if (lowFightSample && rankedWins === 0 && qualityWins < 2) {
+      penalty = 30;
+      status = "low_evidence_top15_entry";
+    } else if (snapshotRank >= 10 && rankedWins === 0 && qualityWins < 2 && bestAdjustedWin < 1560) {
+      penalty = 18;
+      status = "no_ranked_or_quality_win";
+    } else if (snapshotRank >= 12 && lowFightSample && bestAdjustedWin < 1580) {
+      penalty = 12;
+      status = "thin_ranked_sample";
+    }
+
+    if (penalty <= 0) continue;
+
+    candidate.entry_gate_penalty = round(candidate.entry_gate_penalty + penalty, 2);
+    candidate.entry_gate_status = status;
+    candidate.current_context_adjustment = round(candidate.current_context_adjustment - penalty, 2);
+    candidate.final_score = round(candidate.final_score - penalty, 2);
+  }
+
+  return candidates;
+}
+
+function countRankedWins(candidate, rankedNames) {
+  return candidate.last_five.filter(
+    (fight) => fight.result === "W" && rankedNames.has(normalizeName(fight.opponent_name)),
+  ).length;
+}
+
+function countQualityWins(candidate) {
+  return candidate.last_five.filter((fight) => fight.result === "W" && num(fight.rating_change) >= 16).length;
+}
+
 function applyHeadToHeadResolver(candidates, divisionName, fightImpacts, asOfDate) {
   const candidateByName = new Map(candidates.map((candidate) => [normalizeName(candidate.fighter_name), candidate]));
   const latestFightByPair = new Map();
 
   for (const impact of fightImpacts) {
     if (impact.division !== divisionName) continue;
-    if (monthsBetween(new Date(impact.event_date), asOfDate) > HEAD_TO_HEAD_WINDOW_MONTHS) continue;
+    if (monthsBetween(new Date(impact.event_date), asOfDate) > ELITE_HEAD_TO_HEAD_WINDOW_MONTHS) continue;
 
     const winner = candidateByName.get(normalizeName(impact.winner_name));
     const loser = candidateByName.get(normalizeName(impact.loser_name));
@@ -582,30 +672,87 @@ function applyHeadToHeadResolver(candidates, divisionName, fightImpacts, asOfDat
     b.impact.event_date.localeCompare(a.impact.event_date),
   );
 
-  for (const { impact, winner, loser } of latestFights) {
-    if (loser.current_status === "Champion") continue;
+  for (let pass = 0; pass < 4; pass += 1) {
+    let changed = false;
 
-    const ranked = sortCandidates(candidates);
-    const winnerRank = ranked.indexOf(winner) + 1;
-    const loserRank = ranked.indexOf(loser) + 1;
-    if (winnerRank === 0 || loserRank === 0 || winnerRank < loserRank) continue;
+    for (const { impact, winner, loser } of latestFights) {
+      if (loser.current_status === "Champion") continue;
 
-    const scoreGap = loser.final_score - winner.final_score;
-    if (scoreGap > HEAD_TO_HEAD_SCORE_WINDOW) continue;
+      const ranked = sortCandidates(candidates);
+      const winnerRank = ranked.indexOf(winner) + 1;
+      const loserRank = ranked.indexOf(loser) + 1;
+      if (winnerRank === 0 || loserRank === 0 || winnerRank < loserRank) continue;
 
-    const adjustment = round(scoreGap + 1.25, 2);
-    winner.head_to_head_adjustment = round(winner.head_to_head_adjustment + adjustment, 2);
-    winner.current_context_adjustment = round(winner.current_context_adjustment + adjustment, 2);
-    winner.final_score = round(winner.final_score + adjustment, 2);
-    winner.head_to_head_overrides.push({
-      opponent: loser.fighter_name,
-      fight_date: impact.event_date,
-      method: impact.method,
-      adjustment,
-    });
+      const scoreGap = loser.final_score - winner.final_score;
+      const monthsSinceFight = monthsBetween(new Date(impact.event_date), asOfDate);
+      const strictHeadToHead =
+        monthsSinceFight <= STRICT_HEAD_TO_HEAD_WINDOW_MONTHS && !hasDamagingLossAfter(winner, impact.event_date);
+      const eliteHeadToHead =
+        monthsSinceFight <= ELITE_HEAD_TO_HEAD_WINDOW_MONTHS &&
+        winnerRank <= 8 &&
+        loserRank <= 8 &&
+        !hasDamagingLossAfter(winner, impact.event_date);
+      const closeHeadToHead = monthsSinceFight <= HEAD_TO_HEAD_WINDOW_MONTHS;
+      const scoreWindow = strictHeadToHead
+        ? STRICT_HEAD_TO_HEAD_SCORE_WINDOW
+        : eliteHeadToHead
+          ? ELITE_HEAD_TO_HEAD_SCORE_WINDOW
+          : closeHeadToHead
+            ? HEAD_TO_HEAD_SCORE_WINDOW
+            : -Infinity;
+      if (scoreGap > scoreWindow) continue;
+
+      const adjustment = round(scoreGap + 1.25, 2);
+      winner.head_to_head_adjustment = round(winner.head_to_head_adjustment + adjustment, 2);
+      winner.current_context_adjustment = round(winner.current_context_adjustment + adjustment, 2);
+      winner.final_score = round(winner.final_score + adjustment, 2);
+      upsertHeadToHeadOverride({
+        winner,
+        loser,
+        impact,
+        adjustment,
+        rule: strictHeadToHead
+          ? "strict_recent_head_to_head"
+          : eliteHeadToHead
+            ? "elite_extended_head_to_head"
+            : "close_score_head_to_head",
+      });
+      changed = true;
+    }
+
+    if (!changed) break;
   }
 
   return candidates;
+}
+
+function upsertHeadToHeadOverride({ winner, loser, impact, adjustment, rule }) {
+  const existing = winner.head_to_head_overrides.find(
+    (override) => override.opponent === loser.fighter_name && override.fight_date === impact.event_date,
+  );
+
+  if (existing) {
+    existing.adjustment = round(existing.adjustment + adjustment, 2);
+    existing.rule = rule;
+    return;
+  }
+
+  winner.head_to_head_overrides.push({
+    opponent: loser.fighter_name,
+    fight_date: impact.event_date,
+    method: impact.method,
+    adjustment,
+    rule,
+  });
+}
+
+function hasDamagingLossAfter(candidate, date) {
+  return candidate.last_five.some(
+    (fight) =>
+      fight.result === "L" &&
+      fight.date > date &&
+      (isFinish(fight.method) || num(fight.rating_change) <= -18),
+  );
 }
 
 function applyMaxRankAdjustment({ candidates, candidate, maxRank, margin }) {
@@ -655,6 +802,7 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     scoreComponents.recentActivityAdjustment +
     scoreComponents.dominanceAdjustment +
     scoreComponents.finishAdjustment +
+    scoreComponents.titleWinAdjustment +
     scoreComponents.qualityWinAdjustment -
     inactivityPenalty -
     legacy.penalty;
@@ -669,6 +817,8 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     current_status: "Model ranked",
     current_context_adjustment: 0,
     current_context_prior: 0,
+    entry_gate_penalty: 0,
+    entry_gate_status: "",
     title_context_adjustment: 0,
     title_context_status: "",
     title_context_target_rank: null,
@@ -685,6 +835,7 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     recent_activity_adjustment: scoreComponents.recentActivityAdjustment,
     dominance_adjustment: scoreComponents.dominanceAdjustment,
     finish_adjustment: scoreComponents.finishAdjustment,
+    title_win_adjustment: scoreComponents.titleWinAdjustment,
     quality_win_adjustment: scoreComponents.qualityWinAdjustment,
     source_division: sourceDivision,
     display_division: displayDivision,
@@ -719,6 +870,8 @@ function makeSyntheticCandidate({ name, divisionName, args }) {
     current_status: "Current snapshot only",
     current_context_adjustment: 0,
     current_context_prior: 0,
+    entry_gate_penalty: 0,
+    entry_gate_status: "",
     title_context_adjustment: 0,
     title_context_status: "",
     title_context_target_rank: null,
@@ -735,6 +888,7 @@ function makeSyntheticCandidate({ name, divisionName, args }) {
     recent_activity_adjustment: 0,
     dominance_adjustment: 0,
     finish_adjustment: 0,
+    title_win_adjustment: 0,
     quality_win_adjustment: 0,
     source_division: divisionName,
     display_division: divisionName,
@@ -800,6 +954,7 @@ function updateFighterAggregate({
   stats,
   opponentStats,
   dominanceScore,
+  opponentContext,
 }) {
   fighter.fights += 1;
   fighter.lastFightDate = fight.event_date;
@@ -815,12 +970,18 @@ function updateFighterAggregate({
   if (isWinner) {
     fighter.wins += 1;
     if (isFinish(fight.method)) fighter.finishes += 1;
-    if (!fighter.bestWin || opponentPreRating > fighter.bestWin.opponent_pre_rating) {
+    const adjustedOpponentRating = opponentContext?.adjustedRating ?? opponentPreRating;
+    if (!fighter.bestWin || adjustedOpponentRating > fighter.bestWin.adjusted_opponent_rating) {
       fighter.bestWin = {
         fight_id: fight.fight_id,
         event_date: fight.event_date,
         opponent_name: opponent.name,
         opponent_pre_rating: round(opponentPreRating, 2),
+        adjusted_opponent_rating: round(adjustedOpponentRating, 2),
+        opponent_age_at_fight: opponentContext?.ageAtFight ?? "",
+        opponent_form_score: opponentContext?.formScore ?? "",
+        opponent_quality_multiplier: opponentContext?.ratingMultiplier ?? "",
+        opponent_context_reasons: opponentContext?.reasons ?? [],
         method: fight.method,
       };
     }
@@ -834,6 +995,7 @@ function updateFighterAggregate({
     opponent_name: opponent.name,
     method: fight.method,
     rating_change: round(ratingChange, 2),
+    opponent_title_context: opponentContext?.titleContextTag ?? "",
   });
 
   fighter.dominanceTotal += dominanceScore;
@@ -902,6 +1064,132 @@ function getRepeatabilityMultiplier(fight, dominance) {
     multiplier: 1,
     reason: "",
   };
+}
+
+function calculateOpponentContext({ opponent, opponentProfile, opponentTitleContexts, fightDate, opponentPreRating }) {
+  const fightDateValue = new Date(fightDate);
+  const ageAtFight = calculateAgeAtDate(opponentProfile?.dob_iso, fightDateValue);
+  const recentWindowMonths = 30;
+  const recentFights = opponent.lastFive.filter((previousFight) => {
+    const age = monthsBetween(new Date(previousFight.date), fightDateValue);
+    return age <= recentWindowMonths;
+  });
+  const recentWins = recentFights.filter((previousFight) => previousFight.result === "W").length;
+  const recentLosses = recentFights.filter((previousFight) => previousFight.result === "L").length;
+  const recentRatingChange = recentFights.reduce((sum, previousFight) => sum + num(previousFight.rating_change), 0);
+  const losingStreak = calculateCurrentLosingStreak(opponent.lastFive);
+  const monthsInactive = opponent.lastFightDate ? monthsBetween(new Date(opponent.lastFightDate), fightDateValue) : Infinity;
+  const declining = recentLosses > recentWins || recentRatingChange < -10 || losingStreak > 0;
+  const inactive = Number.isFinite(monthsInactive) && monthsInactive > 12;
+
+  let ratingAdjustment = 0;
+  const reasons = [];
+
+  if (Number.isFinite(ageAtFight) && ageAtFight >= OLD_FIGHTER_AGE && (declining || inactive)) {
+    const ageDeclinePenalty =
+      ageAtFight >= VERY_OLD_FIGHTER_AGE
+        ? 18 + (ageAtFight - VERY_OLD_FIGHTER_AGE) * 4
+        : (ageAtFight - OLD_FIGHTER_AGE) * 6;
+    const boundedPenalty = clamp(ageDeclinePenalty, 0, 35);
+    ratingAdjustment -= boundedPenalty;
+    reasons.push(`age_decline:${round(ageAtFight, 1)}`);
+  }
+
+  if (recentFights.length > 0 && recentLosses > recentWins) {
+    const formPenalty = clamp((recentLosses - recentWins) * 9, 0, 27);
+    ratingAdjustment -= formPenalty;
+    reasons.push(`negative_form:${recentWins}-${recentLosses}`);
+  }
+
+  if (losingStreak >= 2) {
+    const streakPenalty = clamp(losingStreak * 5, 0, 20);
+    ratingAdjustment -= streakPenalty;
+    reasons.push(`losing_streak:${losingStreak}`);
+  }
+
+  if (recentRatingChange < -15) {
+    const trendPenalty = clamp((-recentRatingChange - 15) * 0.35, 0, 18);
+    ratingAdjustment -= trendPenalty;
+    reasons.push(`negative_trend:${round(recentRatingChange, 2)}`);
+  }
+
+  if (inactive) {
+    const inactivityPenalty = clamp((monthsInactive - 12) * 1.25, 0, 22);
+    ratingAdjustment -= inactivityPenalty;
+    reasons.push(`opponent_inactivity:${round(monthsInactive, 1)}m`);
+  }
+
+  const primeAge = Number.isFinite(ageAtFight) && ageAtFight >= 27 && ageAtFight <= 33;
+  if (primeAge && recentWins >= recentLosses && recentFights.length >= 2 && recentRatingChange > 15) {
+    const primeBonus = clamp(8 + recentRatingChange * 0.08, 0, 18);
+    ratingAdjustment += primeBonus;
+    reasons.push(`prime_positive_form:${recentWins}-${recentLosses}`);
+  }
+
+  const titleContext = getActiveOpponentTitleContext(opponentTitleContexts, fightDateValue);
+  if (titleContext) {
+    const titleBonus = getOpponentTitleContextBonus(titleContext.tag);
+    if (titleBonus > 0) {
+      ratingAdjustment += titleBonus;
+      reasons.push(`title_context:${titleContext.tag}`);
+    }
+  }
+
+  const formScore = round(
+    recentWins * 10 -
+      recentLosses * 10 +
+      recentRatingChange * 0.25 +
+      Math.min(recentFights.length, 4) * 2 -
+      losingStreak * 5 -
+      (inactive ? Math.min(12, monthsInactive - 12) : 0),
+    2,
+  );
+  const adjustedRating = round(opponentPreRating + clamp(ratingAdjustment, -65, 25), 2);
+  const ratingMultiplier = round(clamp(1 + (adjustedRating - opponentPreRating) / 375, 0.82, 1.08), 4);
+
+  return {
+    ageAtFight: Number.isFinite(ageAtFight) ? round(ageAtFight, 1) : "",
+    adjustedRating,
+    formScore,
+    ratingMultiplier,
+    titleContextTag: titleContext?.tag ?? "",
+    reasons,
+  };
+}
+
+function getActiveOpponentTitleContext(titleContexts, fightDate) {
+  return titleContexts.find((entry) => {
+    if (!entry.event_date) return true;
+    const eventDate = new Date(entry.event_date);
+    if (Number.isNaN(eventDate.getTime())) return false;
+    if (fightDate < eventDate) return false;
+    const protectionMonths = Number(entry.protection_months ?? 18);
+    return !Number.isFinite(protectionMonths) || monthsBetween(eventDate, fightDate) <= protectionMonths;
+  });
+}
+
+function getOpponentTitleContextBonus(tag) {
+  if (tag === "recent_champion") return 28;
+  if (tag === "recent_title_loser") return 18;
+  if (tag === "interim_champion") return 18;
+  if (tag === "former_champion") return 10;
+  return 0;
+}
+
+function calculateAgeAtDate(dobIso, targetDate) {
+  if (!dobIso) return Infinity;
+  const dob = new Date(dobIso);
+  if (Number.isNaN(dob.getTime()) || Number.isNaN(targetDate.getTime())) return Infinity;
+  return (targetDate.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+}
+
+function calculateCurrentLosingStreak(fights) {
+  let streak = 0;
+  for (let index = fights.length - 1; index >= 0; index -= 1) {
+    if (fights[index].result !== "L") break;
+    streak += 1;
+  }
+  return streak;
 }
 
 function getAnnotationContext(annotation) {
@@ -988,6 +1276,7 @@ function calculateScoreComponents({ fighter, legacy, averageDominance }) {
   const dominanceAdjustment = round(clamp((averageDominance - 50) * 0.45, -18, 18), 2);
   const finishRate = fighter.fights > 0 ? fighter.finishes / fighter.fights : 0;
   const finishAdjustment = round(clamp((finishRate - 0.35) * 24, -8, 14), 2);
+  const titleWinAdjustment = calculateTitleWinAdjustment(fighter.lastFive);
   const qualityWinAdjustment = calculateQualityWinAdjustment(fighter.bestWin, legacy.bestWinAgeMonths);
 
   return {
@@ -995,15 +1284,30 @@ function calculateScoreComponents({ fighter, legacy, averageDominance }) {
     recentActivityAdjustment,
     dominanceAdjustment,
     finishAdjustment,
+    titleWinAdjustment,
     qualityWinAdjustment,
   };
 }
 
+function calculateTitleWinAdjustment(fights) {
+  const adjustment = fights.reduce((total, fight) => {
+    if (fight.result !== "W") return total;
+    if (fight.opponent_title_context === "recent_champion") return total + 8;
+    if (fight.opponent_title_context === "recent_title_loser") return total + 5;
+    if (fight.opponent_title_context === "interim_champion") return total + 5;
+    if (fight.opponent_title_context === "former_champion") return total + 3;
+    return total;
+  }, 0);
+
+  return round(clamp(adjustment, 0, 12), 2);
+}
+
 function calculateQualityWinAdjustment(bestWin, bestWinAgeMonths) {
-  if (!bestWin?.opponent_pre_rating || bestWinAgeMonths === "") return 0;
+  const opponentRating = bestWin?.adjusted_opponent_rating ?? bestWin?.opponent_pre_rating;
+  if (!opponentRating || bestWinAgeMonths === "") return 0;
 
   const ageFactor = bestWinAgeMonths <= 24 ? 1 : bestWinAgeMonths <= 48 ? 0.65 : 0.35;
-  const adjustment = (bestWin.opponent_pre_rating - 1540) * 0.22 * ageFactor;
+  const adjustment = (opponentRating - 1540) * 0.22 * ageFactor;
   return round(clamp(adjustment, 0, 28), 2);
 }
 
@@ -1136,6 +1440,21 @@ async function readTitleContext(filePath) {
     if (error.code === "ENOENT") return null;
     throw error;
   }
+}
+
+function buildTitleContextByFighter(titleContext) {
+  const index = new Map();
+  for (const division of titleContext?.divisions ?? []) {
+    for (const entry of division.title_context ?? []) {
+      const normalizedName = normalizeName(entry.fighter);
+      if (!index.has(normalizedName)) index.set(normalizedName, []);
+      index.get(normalizedName).push({
+        ...entry,
+        division: division.division,
+      });
+    }
+  }
+  return index;
 }
 
 function parseCsv(text) {

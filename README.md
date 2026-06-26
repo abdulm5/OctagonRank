@@ -72,9 +72,19 @@ The model writes generated rankings, score breakdowns, and fight-impact files to
 `data/model/`. Those files are ignored by git because they are reproducible from
 the scraped UFCStats data plus manual annotations.
 
+Audit the generated rankings for common failure modes:
+
+```bash
+npm run model:audit
+```
+
+The audit checks champion placement, title-context rules, recent head-to-head
+violations, inactive top-ranked fighters, old-opponent over-credit, thin
+top-15 entries, and large policy adjustments.
+
 ## Project Status
 
 This is an early frontend and modeling prototype. The frontend still uses
-hardcoded ranking data, while the ranking-policy model is a separate generated
-pipeline under `scripts/build-rankings-model.mjs`. The methodology content in
-the app is not final and is marked as placeholder where appropriate.
+hardcoded ranking data, while the opponent-context ranking model is a separate
+generated pipeline under `scripts/build-rankings-model.mjs`. The methodology
+content in the app is not final and is marked as placeholder where appropriate.

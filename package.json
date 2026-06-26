@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "scrape:ufcstats": "node scripts/scrape-ufcstats.mjs",
-    "model:rankings": "node scripts/build-rankings-model.mjs"
+    "model:rankings": "node scripts/build-rankings-model.mjs",
+    "model:audit": "node scripts/audit-rankings.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

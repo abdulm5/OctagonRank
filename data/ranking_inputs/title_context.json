@@ -4,6 +4,20 @@
   "notes": "Used by the ranking-policy layer for context the base fight-stat model should not infer from Elo alone. These entries are visible adjustments, not hidden rank overrides.",
   "divisions": [
     {
+      "division": "Welterweight",
+      "title_context": [
+        {
+          "fighter": "Jack Della Maddalena",
+          "tag": "recent_champion",
+          "event_date": "2025-05-10",
+          "max_overall_rank": 6,
+          "protection_months": 18,
+          "expires_after_loss": false,
+          "note": "Recent champion status should increase opponent-quality credit for fighters who beat him while that title context is still fresh."
+        }
+      ]
+    },
+    {
       "division": "Middleweight",
       "title_context": [
         {
