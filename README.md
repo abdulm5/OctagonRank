@@ -58,7 +58,11 @@ source-backed rows for things UFCStats does not represent cleanly, such as
 controversial decisions, injury finishes, short-notice fights, weight misses,
 division moves, and major layoffs.
 
-Build the context-calibrated rankings model:
+Title-lineage policy context lives in `data/ranking_inputs/title_context.json`.
+This small manual input handles cases like recent title losers, former
+champions, and interim champions without hiding the adjustment in the score.
+
+Build the ranking-policy model:
 
 ```bash
 npm run model:rankings
@@ -71,6 +75,6 @@ the scraped UFCStats data plus manual annotations.
 ## Project Status
 
 This is an early frontend and modeling prototype. The frontend still uses
-hardcoded ranking data, while the context-calibrated model is a separate
-generated pipeline under `scripts/build-rankings-model.mjs`. The methodology
-content in the app is not final and is marked as placeholder where appropriate.
+hardcoded ranking data, while the ranking-policy model is a separate generated
+pipeline under `scripts/build-rankings-model.mjs`. The methodology content in
+the app is not final and is marked as placeholder where appropriate.
