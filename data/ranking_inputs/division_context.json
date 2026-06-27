@@ -1,0 +1,27 @@
+{
+  "source": "Manual OctagonRank current-division context",
+  "as_of": "2026-06-24",
+  "notes": "Used to make source-backed division moves explicit. The model applies these moves before ranking-policy adjustments so fighters are removed from old divisions and placed in their active division.",
+  "division_moves": [
+    {
+      "fighter": "Alex Pereira",
+      "from_division": "Light Heavyweight",
+      "to_division": "Heavyweight",
+      "effective_date": "2026-06-14",
+      "current_rank": 4,
+      "status": "division_transfer_after_heavyweight_debut",
+      "source_url": "https://www.ufc.com/rankings",
+      "note": "Pereira is treated as a heavyweight after the Ciryl Gane fight; his light heavyweight resume transfers with a penalty, while the heavyweight result is applied as current-division context."
+    },
+    {
+      "fighter": "Paulo Costa",
+      "from_division": "Middleweight",
+      "to_division": "Light Heavyweight",
+      "effective_date": "2026-04-11",
+      "current_rank": 6,
+      "status": "division_transfer_after_light_heavyweight_win",
+      "source_url": "data/ufcstats/fights.json",
+      "note": "Costa's latest local fight data is a light heavyweight win over Azamat Murzakanov, so the snapshot should not also keep him in middleweight."
+    }
+  ]
+}

@@ -62,6 +62,11 @@ Title-lineage policy context lives in `data/ranking_inputs/title_context.json`.
 This small manual input handles cases like recent title losers, former
 champions, and interim champions without hiding the adjustment in the score.
 
+Current-division movement context lives in
+`data/ranking_inputs/division_context.json`. This source-backed file removes
+fighters from old divisions and places them in their active division before the
+ranking-policy layer runs.
+
 Build the ranking-policy model:
 
 ```bash
@@ -80,11 +85,32 @@ npm run model:audit
 
 The audit checks champion placement, title-context rules, recent head-to-head
 violations, inactive top-ranked fighters, old-opponent over-credit, thin
-top-15 entries, and large policy adjustments.
+top-15 entries, large policy adjustments, and data-quality issues such as
+duplicate snapshot entries or unexplained division transfers.
+
+Generate a readable review report after the audit:
+
+```bash
+npm run model:review
+```
+
+The review writes `data/model/audit-review.md`. It summarizes the audit,
+prints each division's top 15 with score explanations, and lists the exact
+fighters that need the next tuning pass.
+
+Run the first predictive backtest:
+
+```bash
+npm run model:backtest
+```
+
+The backtest writes `data/model/backtest.json` and checks how often the
+higher-rated pre-fight fighter won for fights since January 1, 2024.
 
 ## Project Status
 
 This is an early frontend and modeling prototype. The frontend still uses
-hardcoded ranking data, while the opponent-context ranking model is a separate
-generated pipeline under `scripts/build-rankings-model.mjs`. The methodology
-content in the app is not final and is marked as placeholder where appropriate.
+hardcoded ranking data, while the v0.8 context and round-dominance ranking model
+is a separate generated pipeline under `scripts/build-rankings-model.mjs`. The
+methodology content in the app is not final and is marked as placeholder where
+appropriate.

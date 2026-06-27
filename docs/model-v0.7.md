@@ -1,5 +1,8 @@
 # Model v0.7: Opponent Context and Ranking Audits
 
+Note: `docs/model-v0.8.md` documents the current model pass with division
+context, round-level dominance, confidence rank guard, and backtesting.
+
 This model pass adds opponent age/form context and a repeatable audit report.
 The goal is to avoid over-crediting wins over older declining names, enforce
 recent head-to-head results more aggressively, and flag suspicious rankings
@@ -154,6 +157,16 @@ The audit writes `data/model/audit.json` and checks:
 - low-sample prospect overboosts,
 - old declining opponent over-credit,
 - large policy adjustments.
+
+Run:
+
+```bash
+npm run model:review
+```
+
+The review writes `data/model/audit-review.md`, a readable tuning report with
+top-15 division tables, fighter score explanations, flagged issues, and a short
+list of recommended next tuning targets.
 
 ## Current Eligibility Rule
 

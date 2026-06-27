@@ -14,6 +14,35 @@
           "protection_months": 18,
           "expires_after_loss": false,
           "note": "Recent champion status should increase opponent-quality credit for fighters who beat him while that title context is still fresh."
+        },
+        {
+          "fighter": "Belal Muhammad",
+          "tag": "former_champion",
+          "event_date": "2024-07-27",
+          "max_overall_rank": 10,
+          "protection_months": 36,
+          "expires_after_loss": false,
+          "note": "Former welterweight champion context keeps wins over Belal from being treated like wins over a normal contender."
+        },
+        {
+          "fighter": "Leon Edwards",
+          "tag": "former_champion",
+          "event_date": "2022-08-20",
+          "max_overall_rank": 12,
+          "rank_policy": false,
+          "protection_months": 54,
+          "expires_after_loss": false,
+          "note": "Longer-tail former champion context, mostly for opponent-quality credit rather than rank protection."
+        },
+        {
+          "fighter": "Kamaru Usman",
+          "tag": "former_champion",
+          "event_date": "2021-02-13",
+          "max_overall_rank": 12,
+          "rank_policy": false,
+          "protection_months": 72,
+          "expires_after_loss": false,
+          "note": "Former dominant champion context is retained with weak rank protection so legacy wins are visible but not overpowering."
         }
       ]
     },
@@ -28,6 +57,91 @@
           "protection_months": 18,
           "expires_after_loss": true,
           "note": "Recent title loser should remain the #1 contender unless he loses again, becomes inactive, or the protection window expires."
+        },
+        {
+          "fighter": "Dricus Du Plessis",
+          "tag": "recent_champion",
+          "event_date": "2024-01-20",
+          "max_overall_rank": 5,
+          "protection_months": 36,
+          "expires_after_loss": false,
+          "note": "Recent champion context gives proper opponent-quality credit to fighters who beat Du Plessis."
+        },
+        {
+          "fighter": "Israel Adesanya",
+          "tag": "former_champion",
+          "event_date": "2019-10-06",
+          "max_overall_rank": 12,
+          "rank_policy": false,
+          "protection_months": 96,
+          "expires_after_loss": false,
+          "note": "Former champion context remains visible, but rank protection is intentionally weak because recent form matters more."
+        },
+        {
+          "fighter": "Robert Whittaker",
+          "tag": "former_champion",
+          "event_date": "2017-07-08",
+          "max_overall_rank": 12,
+          "rank_policy": false,
+          "protection_months": 120,
+          "expires_after_loss": false,
+          "note": "Former champion context for opponent-quality credit in recent wins."
+        }
+      ]
+    },
+    {
+      "division": "Light Heavyweight",
+      "title_context": [
+        {
+          "fighter": "Magomed Ankalaev",
+          "tag": "recent_champion",
+          "event_date": "2025-03-08",
+          "max_overall_rank": 5,
+          "protection_months": 30,
+          "expires_after_loss": false,
+          "note": "Recent champion/title-lineage context keeps Ankalaev's contender value visible after the Pereira rematch."
+        },
+        {
+          "fighter": "Jiri Prochazka",
+          "tag": "former_champion",
+          "event_date": "2023-11-11",
+          "max_overall_rank": 8,
+          "protection_months": 42,
+          "expires_after_loss": false,
+          "note": "Former champion context for wins over Prochazka without forcing him into the very top."
+        },
+        {
+          "fighter": "Jan Blachowicz",
+          "tag": "former_champion",
+          "event_date": "2021-10-30",
+          "max_overall_rank": 12,
+          "rank_policy": false,
+          "protection_months": 72,
+          "expires_after_loss": false,
+          "note": "Older former champion context is retained mainly for opponent-quality credit."
+        }
+      ]
+    },
+    {
+      "division": "Heavyweight",
+      "title_context": [
+        {
+          "fighter": "Ciryl Gane",
+          "tag": "recent_title_challenger",
+          "event_date": "2025-10-25",
+          "max_overall_rank": 4,
+          "protection_months": 24,
+          "expires_after_loss": false,
+          "note": "Recent heavyweight title challenger context helps distinguish elite heavyweight wins from ordinary contender wins."
+        },
+        {
+          "fighter": "Alex Pereira",
+          "tag": "former_champion",
+          "event_date": "2025-10-04",
+          "max_overall_rank": 6,
+          "protection_months": 30,
+          "expires_after_loss": false,
+          "note": "Former light heavyweight champion context follows Pereira into heavyweight, while the division-context file handles the move itself."
         }
       ]
     }

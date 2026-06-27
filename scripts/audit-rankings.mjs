@@ -7,6 +7,8 @@ const DEFAULTS = {
   rankingsPath: "data/model/rankings.json",
   fightImpactsPath: "data/model/fight_impacts.json",
   titleContextPath: "data/ranking_inputs/title_context.json",
+  currentSnapshotPath: "data/ranking_inputs/current_division_snapshot.json",
+  divisionContextPath: "data/ranking_inputs/division_context.json",
   outPath: "data/model/audit.json",
 };
 
@@ -24,20 +26,23 @@ async function main() {
     return;
   }
 
-  const [rankings, fightImpacts, titleContext] = await Promise.all([
+  const [rankings, fightImpacts, titleContext, currentSnapshot, divisionContext] = await Promise.all([
     readJson(path.resolve(process.cwd(), args.rankingsPath)),
     readJson(path.resolve(process.cwd(), args.fightImpactsPath)),
     readOptionalJson(path.resolve(process.cwd(), args.titleContextPath)),
+    readOptionalJson(path.resolve(process.cwd(), args.currentSnapshotPath)),
+    readOptionalJson(path.resolve(process.cwd(), args.divisionContextPath)),
   ]);
 
-  const audit = buildAudit({ rankings, fightImpacts, titleContext });
+  const audit = buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, divisionContext });
   await fs.mkdir(path.dirname(path.resolve(process.cwd(), args.outPath)), { recursive: true });
   await writeJson(path.resolve(process.cwd(), args.outPath), audit);
   printAuditSummary(audit, args.outPath);
 }
 
-function buildAudit({ rankings, fightImpacts, titleContext }) {
+function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, divisionContext }) {
   const titleContextByDivision = new Map((titleContext?.divisions ?? []).map((division) => [division.division, division]));
+  const divisionContextByFighter = buildDivisionContextByFighter(divisionContext);
   const checks = {
     champion: [],
     title_context: [],
@@ -46,7 +51,9 @@ function buildAudit({ rankings, fightImpacts, titleContext }) {
     prospect_overboost: [],
     old_opponent_overcredit: [],
     large_policy_adjustments: [],
+    data_quality: buildSnapshotDataQualityChecks(currentSnapshot),
   };
+  const asOfDate = new Date(rankings.as_of);
 
   for (const division of rankings.divisions) {
     const ranked = division.rankings ?? [];
@@ -61,6 +68,7 @@ function buildAudit({ rankings, fightImpacts, titleContext }) {
     });
 
     for (const entry of titleContextByDivision.get(division.division)?.title_context ?? []) {
+      if (entry.rank_policy === false) continue;
       const fighter = byName.get(normalizeName(entry.fighter));
       const maxRank = Number(entry.max_overall_rank ?? getDefaultTitleContextRank(entry.tag));
       checks.title_context.push({
@@ -127,6 +135,36 @@ function buildAudit({ rankings, fightImpacts, titleContext }) {
           ...policyAdjustments,
         });
       }
+
+      const sourceDivision = fighter.source_division;
+      const displayDivision = fighter.display_division ?? division.division;
+      const hasDivisionContext = Boolean(
+        getActiveDivisionMove(divisionContextByFighter.get(normalizeName(fighter.fighter_name)), displayDivision, asOfDate),
+      );
+      if (!fighter.fighter_id || fighter.current_status === "Current snapshot only") {
+        checks.data_quality.push({
+          type: "snapshot_missing_ufcstats_profile",
+          division: division.division,
+          fighter: fighter.fighter_name,
+          detail: "Ranked in the current snapshot but no UFCStats profile/model row was matched.",
+        });
+      }
+      if (sourceDivision && displayDivision && sourceDivision !== displayDivision && !hasDivisionContext) {
+        checks.data_quality.push({
+          type: "uncontextualized_division_transfer",
+          division: division.division,
+          fighter: fighter.fighter_name,
+          detail: `Model source division is ${sourceDivision}, display division is ${displayDivision}, but no division_context entry explains it.`,
+        });
+      }
+      if (fighter.current_status === "Champion" && num(fighter.months_inactive) > 24) {
+        checks.data_quality.push({
+          type: "stale_champion_activity",
+          division: division.division,
+          fighter: fighter.fighter_name,
+          detail: `Champion has ${fighter.months_inactive} months inactive in the model output.`,
+        });
+      }
     }
 
     for (const impact of fightImpacts) {
@@ -152,6 +190,17 @@ function buildAudit({ rankings, fightImpacts, titleContext }) {
     }
   }
 
+  for (const impact of fightImpacts) {
+    if (impact.event_date > rankings.as_of) {
+      checks.data_quality.push({
+        type: "fight_after_rankings_as_of",
+        division: impact.division,
+        fighter: impact.winner_name,
+        detail: `${impact.event_date} is after rankings as_of ${rankings.as_of}.`,
+      });
+    }
+  }
+
   return {
     generated_at: new Date().toISOString(),
     model_version: rankings.model_version,
@@ -164,6 +213,7 @@ function buildAudit({ rankings, fightImpacts, titleContext }) {
       prospect_overboost: checks.prospect_overboost.length,
       old_opponent_overcredit: checks.old_opponent_overcredit.length,
       large_policy_adjustments: checks.large_policy_adjustments.length,
+      data_quality_flags: checks.data_quality.length,
     },
     checks,
   };
@@ -173,8 +223,73 @@ function getDefaultTitleContextRank(tag) {
   if (tag === "recent_title_loser") return 2;
   if (tag === "recent_champion") return 4;
   if (tag === "interim_champion") return 4;
+  if (tag === "recent_title_challenger") return 5;
   if (tag === "former_champion") return 6;
   return null;
+}
+
+function buildSnapshotDataQualityChecks(currentSnapshot) {
+  const checks = [];
+  const seen = new Map();
+
+  for (const division of currentSnapshot?.divisions ?? []) {
+    const entries = [
+      { fighter: division.champion, slot: "Champion" },
+      ...(division.rankings ?? []).map((fighter, index) => ({
+        fighter,
+        slot: `Contender #${index + 1}`,
+      })),
+    ].filter((entry) => entry.fighter);
+
+    for (const entry of entries) {
+      const normalizedName = normalizeName(entry.fighter);
+      const previous = seen.get(normalizedName);
+      if (previous) {
+        checks.push({
+          type: "duplicate_snapshot_entry",
+          division: division.division,
+          fighter: entry.fighter,
+          detail: `Also appears in ${previous.division} as ${previous.slot}.`,
+        });
+      } else {
+        seen.set(normalizedName, {
+          division: division.division,
+          slot: entry.slot,
+        });
+      }
+    }
+  }
+
+  return checks;
+}
+
+function buildDivisionContextByFighter(divisionContext) {
+  const index = new Map();
+  for (const move of divisionContext?.division_moves ?? []) {
+    const normalizedName = normalizeName(move.fighter);
+    if (!index.has(normalizedName)) index.set(normalizedName, []);
+    index.get(normalizedName).push(move);
+  }
+  return index;
+}
+
+function getActiveDivisionMove(moves = [], divisionName, asOfDate) {
+  return moves
+    .filter((move) => move.to_division === divisionName && isActiveDivisionMove(move, asOfDate))
+    .sort((a, b) => String(b.effective_date ?? "").localeCompare(String(a.effective_date ?? "")))[0];
+}
+
+function isActiveDivisionMove(move, asOfDate) {
+  if (!move?.to_division) return false;
+  if (move.effective_date) {
+    const effectiveDate = new Date(move.effective_date);
+    if (Number.isNaN(effectiveDate.getTime()) || effectiveDate > asOfDate) return false;
+  }
+  if (move.expires_on) {
+    const expiresOn = new Date(move.expires_on);
+    if (!Number.isNaN(expiresOn.getTime()) && expiresOn < asOfDate) return false;
+  }
+  return true;
 }
 
 async function readJson(filePath) {
@@ -205,6 +320,10 @@ function parseArgs(argv) {
       args.fightImpactsPath = arg.slice("--fight-impacts=".length);
     } else if (arg.startsWith("--title-context=")) {
       args.titleContextPath = arg.slice("--title-context=".length);
+    } else if (arg.startsWith("--current-snapshot=")) {
+      args.currentSnapshotPath = arg.slice("--current-snapshot=".length);
+    } else if (arg.startsWith("--division-context=")) {
+      args.divisionContextPath = arg.slice("--division-context=".length);
     } else if (arg.startsWith("--out=")) {
       args.outPath = arg.slice("--out=".length);
     } else {
@@ -225,6 +344,8 @@ Options:
   --rankings=PATH       Generated rankings JSON path.
   --fight-impacts=PATH  Generated fight impacts JSON path.
   --title-context=PATH  Manual title context JSON path.
+  --current-snapshot=PATH  Current snapshot JSON path.
+  --division-context=PATH  Manual division context JSON path.
   --out=PATH            Audit output JSON path.
 `);
 }
