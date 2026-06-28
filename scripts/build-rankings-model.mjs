@@ -163,6 +163,12 @@ async function main() {
       current_context_adjustment: fighter.current_context_adjustment,
       base_rating: fighter.base_rating,
       recent_form_adjustment: fighter.recent_form_adjustment,
+      recent_outcome_adjustment: fighter.recent_outcome_adjustment,
+      schedule_strength_adjustment: fighter.schedule_strength_adjustment,
+      schedule_strength_score: fighter.schedule_strength_score,
+      schedule_strength_status: fighter.schedule_strength_status,
+      avg_win_opponent_rating_last_5: fighter.avg_win_opponent_rating_last_5,
+      best_win_opponent_rating_last_5: fighter.best_win_opponent_rating_last_5,
       recent_activity_adjustment: fighter.recent_activity_adjustment,
       dominance_adjustment: fighter.dominance_adjustment,
       finish_adjustment: fighter.finish_adjustment,
@@ -198,7 +204,7 @@ async function main() {
   );
 
   const output = {
-    model_version: "v0.8-context-rounds-backtest",
+    model_version: "v0.8.3-schedule-strength",
     generated_at: new Date().toISOString(),
     as_of: toIsoDate(asOfDate),
     source: summary.source ?? "ufcstats.com",
@@ -236,13 +242,16 @@ async function main() {
       method_multiplier: "Finishes and clean decisions move ratings more than split decisions, DQs, or weird stoppages.",
       dominance_multiplier: "Significant strike differential, knockdowns, takedowns, control time, and submission attempts adjust the size of the update.",
       round_dominance: "Per-round stats add a separate dominance score and dampen late comeback finishes when the winner was losing the round profile.",
+      no_decision_activity: "Draws and no-contests update activity, stat totals, and dominance samples without changing Elo ratings.",
       result_confidence: "Manual annotations and low-repeatability stat patterns dampen noisy outcomes without deleting the official result.",
       recent_form_adjustment: "Recent wins and recent Elo movement add or remove points from the post-fight rating.",
+      recent_outcome_adjustment: "The latest result adds a small recency check, with recent finish losses penalized more than decision losses.",
+      schedule_strength_adjustment: "Recent win streaks are capped when built on weak opponent quality, while strong recent schedules receive a small bonus.",
       recent_activity_adjustment: "Fighters get a small positive bump for recent ranked activity before inactivity penalties are applied.",
       dominance_adjustment: "Average dominance across fights becomes a bounded score adjustment, not just a hidden Elo multiplier.",
       finish_adjustment: "A fighter's finish rate adds a small bonus, while low finish rates get a small penalty.",
       title_win_adjustment: "Recent wins over fighters with title-lineage context add visible resume credit.",
-      quality_win_adjustment: "The best win adds value based on opponent rating, with older best wins decayed.",
+      quality_win_adjustment: "The best win adds value based on opponent rating, with older best wins and older declining opponents dampened.",
       inactivity_penalty: "Fighters keep rating value, but lose final-score confidence after 12 months without a fight.",
       legacy_penalty: "High raw ratings are dampened when they are supported mostly by older peak wins rather than recent ranked activity.",
       current_context: "A current division snapshot limits rankings to the active ranked pool and adds a smaller status prior instead of forcing contender order.",
@@ -285,7 +294,18 @@ function processFight({
   titleContextByFighter,
   args,
 }) {
-  if (!fight.winner_fighter_id || fight.method === "Overturned") {
+  if (fight.method === "Overturned") {
+    return null;
+  }
+
+  if (!fight.winner_fighter_id) {
+    updateNoDecisionFightActivity({
+      fight,
+      statsForFight,
+      roundStatsForFight,
+      divisionRatings,
+      args,
+    });
     return null;
   }
 
@@ -490,7 +510,11 @@ function buildCurrentSnapshotRankings({
           sourceDivision: indexedFighter.division,
           asOfDate,
           args,
-          transferPenalty: indexedFighter.division === divisionName ? 0 : 25,
+          transferPenalty: getDivisionTransferPenalty({
+            sourceDivision: indexedFighter.division,
+            displayDivision: divisionName,
+            divisionMove,
+          }),
         })
       : null;
     const baseCandidate = chooseSnapshotCandidate({ currentDivisionCandidate, transferCandidate, divisionMove }) ??
@@ -527,12 +551,14 @@ function buildCurrentSnapshotRankings({
     };
   });
 
-  return applyHeadToHeadResolver(
-    applyRankDriftGuard(applyRankedEntryGate(applyTitleContextPolicy(applyTitleGuard(candidates), titleContextDivision, asOfDate))),
-    divisionName,
-    fightImpacts,
-    asOfDate,
-  )
+  const guardedCandidates = applyTitleGuard(candidates);
+  const titleContextCandidates = applyTitleContextPolicy(guardedCandidates, titleContextDivision, asOfDate);
+  const gatedCandidates = applyRankedEntryGate(titleContextCandidates);
+  const rankGuardCandidates = applyRankDriftGuard(gatedCandidates);
+  const headToHeadCandidates = applyHeadToHeadResolver(rankGuardCandidates, divisionName, fightImpacts, asOfDate);
+  const finalPolicyCandidates = applyTitleContextPolicy(headToHeadCandidates, titleContextDivision, asOfDate);
+
+  return finalPolicyCandidates
     .sort((a, b) => b.final_score - a.final_score)
     .map((fighter, index) => ({ ...fighter, rank: index + 1 }));
 }
@@ -710,6 +736,7 @@ function calculateRankGuardConfidence(candidate) {
   if (candidate.entry_gate_status) confidence -= 0.18;
   if (num(candidate.inactivity_penalty) >= 20) confidence -= 0.14;
   if (num(candidate.legacy_penalty) >= 35) confidence -= 0.12;
+  if (num(candidate.recent_outcome_adjustment) <= -8) confidence -= 0.08;
 
   return round(clamp(confidence, 0, 1), 2);
 }
@@ -726,14 +753,26 @@ function applyRankedEntryGate(candidates) {
     const rankedWins = countRankedWins(candidate, rankedNames);
     const qualityWins = countQualityWins(candidate);
     const bestAdjustedWin = num(candidate.best_win?.adjusted_opponent_rating);
+    const qualityWinScore = num(candidate.quality_win_adjustment);
     const lowFightSample = candidate.ufc_division_fights < 4;
+    const protectedTransfer =
+      Boolean(candidate.division_context_status || candidate.transfer_source_division) ||
+      (candidate.source_division && candidate.display_division && candidate.source_division !== candidate.display_division);
+    const titleLineageEvidence = num(candidate.title_win_adjustment) > 0 || Boolean(candidate.title_context_status);
+    const strongEntryEvidence = rankedWins > 0 || bestAdjustedWin >= 1600 || titleLineageEvidence || protectedTransfer;
 
     let penalty = 0;
     let status = "";
 
-    if (lowFightSample && rankedWins === 0 && qualityWins < 2) {
+    if (lowFightSample && snapshotRank <= 10 && !strongEntryEvidence && qualityWins < 2) {
+      penalty = 28;
+      status = "thin_top10_sample";
+    } else if (lowFightSample && rankedWins === 0 && qualityWins < 2) {
       penalty = 30;
       status = "low_evidence_top15_entry";
+    } else if (snapshotRank >= 12 && rankedWins === 0 && bestAdjustedWin < 1560 && qualityWinScore < 6) {
+      penalty = 26;
+      status = "unproven_ranked_jump";
     } else if (snapshotRank >= 10 && rankedWins === 0 && qualityWins < 2 && bestAdjustedWin < 1560) {
       penalty = 18;
       status = "no_ranked_or_quality_win";
@@ -903,6 +942,18 @@ function chooseBestCandidate(...candidates) {
     .sort((a, b) => b.final_score - a.final_score)[0];
 }
 
+function getDivisionTransferPenalty({ sourceDivision, displayDivision, divisionMove }) {
+  if (sourceDivision === displayDivision) return 0;
+
+  const explicitPenalty = Number(divisionMove?.transfer_penalty);
+  if (Number.isFinite(explicitPenalty)) return Math.max(0, explicitPenalty);
+
+  if (divisionMove?.resume_carryover === "elite_champion") return 5;
+  if (divisionMove?.resume_carryover === "recent_champion") return 10;
+  if (divisionMove?.resume_carryover === "ranked_veteran") return 18;
+  return 25;
+}
+
 function chooseSnapshotCandidate({ currentDivisionCandidate, transferCandidate, divisionMove }) {
   if (!currentDivisionCandidate) return transferCandidate;
   if (!transferCandidate || transferCandidate.source_division === currentDivisionCandidate.display_division) {
@@ -986,10 +1037,13 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     legacy,
     averageDominance,
     averageRoundDominance,
+    monthsInactive,
   });
   const modelScore =
     baseRating +
     scoreComponents.recentFormAdjustment +
+    scoreComponents.recentOutcomeAdjustment +
+    scoreComponents.scheduleStrengthAdjustment +
     scoreComponents.recentActivityAdjustment +
     scoreComponents.dominanceAdjustment +
     scoreComponents.roundDominanceAdjustment +
@@ -1026,6 +1080,12 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     final_score: round(modelScore, 2),
     base_rating: round(baseRating, 2),
     recent_form_adjustment: scoreComponents.recentFormAdjustment,
+    recent_outcome_adjustment: scoreComponents.recentOutcomeAdjustment,
+    schedule_strength_adjustment: scoreComponents.scheduleStrengthAdjustment,
+    schedule_strength_score: scoreComponents.scheduleStrengthScore,
+    schedule_strength_status: scoreComponents.scheduleStrengthStatus,
+    avg_win_opponent_rating_last_5: scoreComponents.avgWinOpponentRatingLast5,
+    best_win_opponent_rating_last_5: scoreComponents.bestWinOpponentRatingLast5,
     recent_activity_adjustment: scoreComponents.recentActivityAdjustment,
     dominance_adjustment: scoreComponents.dominanceAdjustment,
     round_dominance_adjustment: scoreComponents.roundDominanceAdjustment,
@@ -1094,6 +1154,12 @@ function makeSyntheticCandidate({ name, divisionName, args }) {
     final_score: args.initialRating,
     base_rating: args.initialRating,
     recent_form_adjustment: 0,
+    recent_outcome_adjustment: 0,
+    schedule_strength_adjustment: 0,
+    schedule_strength_score: "",
+    schedule_strength_status: "",
+    avg_win_opponent_rating_last_5: "",
+    best_win_opponent_rating_last_5: "",
     recent_activity_adjustment: 0,
     dominance_adjustment: 0,
     round_dominance_adjustment: 0,
@@ -1217,6 +1283,10 @@ function updateFighterAggregate({
     date: fight.event_date,
     result: isWinner ? "W" : "L",
     opponent_name: opponent.name,
+    opponent_pre_rating: round(opponentPreRating, 2),
+    opponent_adjusted_rating: round(opponentContext?.adjustedRating ?? opponentPreRating, 2),
+    opponent_form_score: opponentContext?.formScore ?? "",
+    opponent_context_reasons: opponentContext?.reasons ?? [],
     method: fight.method,
     rating_change: round(ratingChange, 2),
     opponent_title_context: opponentContext?.titleContextTag ?? "",
@@ -1233,16 +1303,104 @@ function updateFighterAggregate({
     if (roundDominance.comebackFinish) fighter.comebackFinishes += 1;
   }
 
-  if (stats) {
-    fighter.totals.knockdowns += num(stats.knockdowns);
-    fighter.totals.sig_strikes_landed += num(stats.sig_strikes_landed);
-    fighter.totals.sig_strikes_attempted += num(stats.sig_strikes_attempted);
-    fighter.totals.sig_strikes_absorbed += num(opponentStats?.sig_strikes_landed);
-    fighter.totals.takedowns_landed += num(stats.takedowns_landed);
-    fighter.totals.takedowns_attempted += num(stats.takedowns_attempted);
-    fighter.totals.submission_attempts += num(stats.submission_attempts);
-    fighter.totals.control_seconds += num(stats.control_seconds);
+  addFighterStatTotals({ fighter, stats, opponentStats });
+}
+
+function updateNoDecisionFightActivity({ fight, statsForFight, roundStatsForFight, divisionRatings, args }) {
+  const division = getDivisionState(divisionRatings, fight.weight_class);
+  const fighterOne = getFighterState(division, fight.fighter_1_id, fight.fighter_1_name, fight.weight_class, args.initialRating);
+  const fighterTwo = getFighterState(division, fight.fighter_2_id, fight.fighter_2_name, fight.weight_class, args.initialRating);
+  const fighterOneStats = statsForFight?.get(fight.fighter_1_id);
+  const fighterTwoStats = statsForFight?.get(fight.fighter_2_id);
+  const dominance = calculateDominance(fighterOneStats, fighterTwoStats);
+  const roundDominance = calculateRoundDominance({
+    roundStatsForFight,
+    winnerId: fight.fighter_1_id,
+    loserId: fight.fighter_2_id,
+    fight,
+  });
+
+  updateNoDecisionFighterAggregate({
+    fighter: fighterOne,
+    opponent: fighterTwo,
+    fight,
+    result: fight.fighter_1_status || "NC",
+    stats: fighterOneStats,
+    opponentStats: fighterTwoStats,
+    dominanceScore: dominance.score,
+    roundDominanceScore: roundDominance.score,
+    roundDominance,
+  });
+
+  updateNoDecisionFighterAggregate({
+    fighter: fighterTwo,
+    opponent: fighterOne,
+    fight,
+    result: fight.fighter_2_status || "NC",
+    stats: fighterTwoStats,
+    opponentStats: fighterOneStats,
+    dominanceScore: 100 - dominance.score,
+    roundDominanceScore: roundDominance.hasRounds ? 100 - roundDominance.score : 50,
+    roundDominance: invertRoundDominance(roundDominance),
+  });
+}
+
+function updateNoDecisionFighterAggregate({
+  fighter,
+  opponent,
+  fight,
+  result,
+  stats,
+  opponentStats,
+  dominanceScore,
+  roundDominanceScore,
+  roundDominance,
+}) {
+  fighter.fights += 1;
+  fighter.lastFightDate = fight.event_date;
+  fighter.ratingHistory.push({
+    fight_id: fight.fight_id,
+    event_date: fight.event_date,
+    opponent_name: opponent.name,
+    pre_rating: round(fighter.rating, 2),
+    post_rating: round(fighter.rating, 2),
+    rating_change: 0,
+  });
+  fighter.lastFive.push({
+    date: fight.event_date,
+    result,
+    opponent_name: opponent.name,
+    opponent_pre_rating: round(opponent.rating, 2),
+    opponent_adjusted_rating: round(opponent.rating, 2),
+    opponent_form_score: "",
+    opponent_context_reasons: [],
+    method: fight.method,
+    rating_change: 0,
+    opponent_title_context: "",
+  });
+  fighter.dominanceTotal += dominanceScore;
+  fighter.dominanceSamples += 1;
+  if (roundDominance?.hasRounds) {
+    fighter.roundDominanceTotal += roundDominanceScore;
+    fighter.roundDominanceSamples += 1;
+    fighter.clearRoundsWon += roundDominance.winnerClearRounds;
+    fighter.clearRoundsLost += roundDominance.loserClearRounds;
+    fighter.closeRounds += roundDominance.closeRounds;
   }
+  addFighterStatTotals({ fighter, stats, opponentStats });
+}
+
+function addFighterStatTotals({ fighter, stats, opponentStats }) {
+  if (!stats) return;
+
+  fighter.totals.knockdowns += num(stats.knockdowns);
+  fighter.totals.sig_strikes_landed += num(stats.sig_strikes_landed);
+  fighter.totals.sig_strikes_attempted += num(stats.sig_strikes_attempted);
+  fighter.totals.sig_strikes_absorbed += num(opponentStats?.sig_strikes_landed);
+  fighter.totals.takedowns_landed += num(stats.takedowns_landed);
+  fighter.totals.takedowns_attempted += num(stats.takedowns_attempted);
+  fighter.totals.submission_attempts += num(stats.submission_attempts);
+  fighter.totals.control_seconds += num(stats.control_seconds);
 }
 
 function calculateDominance(winnerStats, loserStats) {
@@ -1617,10 +1775,16 @@ function calculateLegacyPenalty(fighter, asOfDate, baseRating) {
   };
 }
 
-function calculateScoreComponents({ fighter, legacy, averageDominance, averageRoundDominance }) {
+function calculateScoreComponents({ fighter, legacy, averageDominance, averageRoundDominance, monthsInactive }) {
   const recentRecordAdjustment = clamp((legacy.recentWins - legacy.recentLosses) * 8, -24, 24);
   const recentTrendAdjustment = clamp(legacy.recentRatingChange * 0.25, -20, 20);
   const recentFormAdjustment = round(recentRecordAdjustment + recentTrendAdjustment, 2);
+  const recentOutcomeAdjustment = calculateRecentOutcomeAdjustment(fighter.lastFive, monthsInactive);
+  const scheduleStrength = calculateScheduleStrength({
+    fights: fighter.lastFive,
+    recentFormAdjustment,
+    totalFights: fighter.fights,
+  });
   const recentActivityAdjustment = round(clamp(legacy.recentFightCount * 4, 0, 16), 2);
   const dominanceAdjustment = round(clamp((averageDominance - 50) * 0.45, -18, 18), 2);
   const roundDominanceAdjustment = round(clamp((averageRoundDominance - 50) * 0.25, -10, 10), 2);
@@ -1631,6 +1795,12 @@ function calculateScoreComponents({ fighter, legacy, averageDominance, averageRo
 
   return {
     recentFormAdjustment,
+    recentOutcomeAdjustment,
+    scheduleStrengthAdjustment: scheduleStrength.adjustment,
+    scheduleStrengthScore: scheduleStrength.score,
+    scheduleStrengthStatus: scheduleStrength.status,
+    avgWinOpponentRatingLast5: scheduleStrength.avgWinOpponentRatingLast5,
+    bestWinOpponentRatingLast5: scheduleStrength.bestWinOpponentRatingLast5,
     recentActivityAdjustment,
     dominanceAdjustment,
     roundDominanceAdjustment,
@@ -1638,6 +1808,131 @@ function calculateScoreComponents({ fighter, legacy, averageDominance, averageRo
     titleWinAdjustment,
     qualityWinAdjustment,
   };
+}
+
+function calculateScheduleStrength({ fights, recentFormAdjustment, totalFights }) {
+  const recentFights = fights.slice(-5);
+  const wins = recentFights.filter((fight) => fight.result === "W");
+  const winRatings = wins.map(getFightOpponentRating).filter(Number.isFinite);
+  const avgWinRating =
+    winRatings.length > 0 ? winRatings.reduce((sum, rating) => sum + rating, 0) / winRatings.length : NaN;
+  const bestWinRating = winRatings.length > 0 ? Math.max(...winRatings) : NaN;
+  const provenWins = wins.filter((fight) => isProvenScheduleWin(fight)).length;
+  const eliteWins = wins.filter((fight) => isEliteScheduleWin(fight)).length;
+  const titleLineageWins = wins.filter((fight) => Boolean(fight.opponent_title_context)).length;
+  const latestFight = recentFights.at(-1);
+
+  let adjustment = 0;
+  const statuses = [];
+
+  if (wins.length >= 2 && Number.isFinite(avgWinRating) && avgWinRating >= 1605) {
+    adjustment += clamp((avgWinRating - 1600) * 0.08 + eliteWins * 2, 2, 8);
+    statuses.push("strong_recent_schedule");
+  }
+
+  if (
+    wins.length >= 3 &&
+    recentFormAdjustment > 18 &&
+    provenWins === 0 &&
+    titleLineageWins === 0 &&
+    Number.isFinite(avgWinRating) &&
+    avgWinRating < 1545
+  ) {
+    adjustment -= clamp(6 + (1545 - avgWinRating) * 0.16 + (wins.length - 3) * 2, 6, 16);
+    statuses.push("weak_recent_schedule");
+  }
+
+  if (
+    wins.length >= 4 &&
+    recentFormAdjustment > 18 &&
+    provenWins === 0 &&
+    titleLineageWins === 0 &&
+    Number.isFinite(bestWinRating) &&
+    bestWinRating < 1560
+  ) {
+    adjustment -= 8;
+    statuses.push("inflated_win_streak");
+  }
+
+  if (
+    recentFormAdjustment > 28 &&
+    provenWins === 0 &&
+    titleLineageWins === 0 &&
+    Number.isFinite(avgWinRating) &&
+    avgWinRating < 1545
+  ) {
+    adjustment -= clamp(recentFormAdjustment - 20, 0, 12);
+    statuses.push("recent_form_cap");
+  }
+
+  if (isEliteExposureLoss({ latestFight, previousFights: recentFights.slice(0, -1), totalFights })) {
+    adjustment -= 10;
+    statuses.push("elite_exposure_loss");
+  }
+
+  const score = Number.isFinite(avgWinRating) ? clamp((avgWinRating - 1500) / 1.6 + provenWins * 8 + eliteWins * 5, 0, 100) : NaN;
+
+  return {
+    adjustment: round(clamp(adjustment, -30, 10), 2),
+    score: Number.isFinite(score) ? round(score, 1) : "",
+    status: statuses.join("|"),
+    avgWinOpponentRatingLast5: Number.isFinite(avgWinRating) ? round(avgWinRating, 2) : "",
+    bestWinOpponentRatingLast5: Number.isFinite(bestWinRating) ? round(bestWinRating, 2) : "",
+  };
+}
+
+function isProvenScheduleWin(fight) {
+  const opponentRating = getFightOpponentRating(fight);
+  return opponentRating >= 1560 || Boolean(fight.opponent_title_context);
+}
+
+function isEliteScheduleWin(fight) {
+  const opponentRating = getFightOpponentRating(fight);
+  return (
+    opponentRating >= 1625 ||
+    ["recent_champion", "recent_title_loser", "interim_champion"].includes(fight.opponent_title_context)
+  );
+}
+
+function isEliteExposureLoss({ latestFight, previousFights, totalFights }) {
+  if (!latestFight || latestFight.result !== "L") return false;
+  if (totalFights > 10) return false;
+
+  const opponentRating = getFightOpponentRating(latestFight);
+  if (opponentRating < 1600) return false;
+  if (!isFinish(latestFight.method) && num(latestFight.rating_change) > -16) return false;
+
+  const previousWins = previousFights.filter((fight) => fight.result === "W");
+  if (previousWins.length < 3) return false;
+
+  const previousWinRatings = previousWins.map(getFightOpponentRating).filter(Number.isFinite);
+  if (previousWinRatings.length === 0) return false;
+
+  const previousAverage = previousWinRatings.reduce((sum, rating) => sum + rating, 0) / previousWinRatings.length;
+  return previousAverage < 1580 && !previousWins.some(isEliteScheduleWin) && !previousWins.some(hasTitleLineageWin);
+}
+
+function hasTitleLineageWin(fight) {
+  return Boolean(fight.opponent_title_context);
+}
+
+function getFightOpponentRating(fight) {
+  const adjustedRating = num(fight?.opponent_adjusted_rating);
+  if (Number.isFinite(adjustedRating) && adjustedRating > 0) return adjustedRating;
+
+  const preRating = num(fight?.opponent_pre_rating);
+  return Number.isFinite(preRating) && preRating > 0 ? preRating : NaN;
+}
+
+function calculateRecentOutcomeAdjustment(fights, monthsInactive) {
+  const latestFight = fights.at(-1);
+  if (!latestFight || latestFight.result !== "L") return 0;
+
+  const recencyFactor = monthsInactive <= 12 ? 1 : monthsInactive <= 18 ? 0.6 : 0;
+  if (recencyFactor === 0) return 0;
+
+  const basePenalty = isFinish(latestFight.method) ? -10 : -5;
+  return round(basePenalty * recencyFactor, 2);
 }
 
 function calculateTitleWinAdjustment(fights) {
@@ -1659,7 +1954,16 @@ function calculateQualityWinAdjustment(bestWin, bestWinAgeMonths) {
   if (!opponentRating || bestWinAgeMonths === "") return 0;
 
   const ageFactor = bestWinAgeMonths <= 24 ? 1 : bestWinAgeMonths <= 48 ? 0.65 : 0.35;
-  const adjustment = (opponentRating - 1540) * 0.22 * ageFactor;
+  const opponentAge = num(bestWin?.opponent_age_at_fight);
+  const opponentFormScore = num(bestWin?.opponent_form_score);
+  const opponentReasons = bestWin?.opponent_context_reasons ?? [];
+  const olderDecliningOpponent = opponentAge >= OLD_FIGHTER_AGE && opponentFormScore < 0;
+  const contextFactor = olderDecliningOpponent
+    ? 0.6
+    : opponentAge >= OLD_FIGHTER_AGE && opponentReasons.some((reason) => String(reason).startsWith("age_decline"))
+      ? 0.75
+      : 1;
+  const adjustment = (opponentRating - 1540) * 0.22 * ageFactor * contextFactor;
   return round(clamp(adjustment, 0, 28), 2);
 }
 

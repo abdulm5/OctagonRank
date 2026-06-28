@@ -111,6 +111,15 @@
           "note": "Former champion context for wins over Prochazka without forcing him into the very top."
         },
         {
+          "fighter": "Khalil Rountree Jr.",
+          "tag": "recent_title_challenger",
+          "event_date": "2024-10-05",
+          "max_overall_rank": 9,
+          "protection_months": 30,
+          "expires_after_loss": false,
+          "note": "Recent title challenger context plus the Jamahal Hill win keeps Rountree from falling behind weaker light heavyweight resumes, while still allowing the later Jiri loss to hold him outside the top five."
+        },
+        {
           "fighter": "Jan Blachowicz",
           "tag": "former_champion",
           "event_date": "2021-10-30",

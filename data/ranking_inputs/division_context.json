@@ -10,8 +10,10 @@
       "effective_date": "2026-06-14",
       "current_rank": 4,
       "status": "division_transfer_after_heavyweight_debut",
+      "resume_carryover": "elite_champion",
+      "transfer_penalty": 5,
       "source_url": "https://www.ufc.com/rankings",
-      "note": "Pereira is treated as a heavyweight after the Ciryl Gane fight; his light heavyweight resume transfers with a penalty, while the heavyweight result is applied as current-division context."
+      "note": "Pereira is treated as a heavyweight after the Ciryl Gane fight. Because he was a dominant recent light heavyweight champion, most of that resume transfers, while the heavyweight loss is still applied as current-division context."
     },
     {
       "fighter": "Paulo Costa",

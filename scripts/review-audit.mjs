@@ -259,6 +259,14 @@ function explainFighter(fighter) {
   } else if (num(fighter.recent_form_adjustment) <= -20) {
     reasons.push(`recent form drag ${fmtSigned(fighter.recent_form_adjustment)}`);
   }
+  if (num(fighter.recent_outcome_adjustment) <= -4) {
+    reasons.push(`latest result ${fmtSigned(fighter.recent_outcome_adjustment)}`);
+  }
+  if (num(fighter.schedule_strength_adjustment) <= -5) {
+    reasons.push(`schedule strength ${fmtSigned(fighter.schedule_strength_adjustment)} (${fighter.schedule_strength_status})`);
+  } else if (num(fighter.schedule_strength_adjustment) >= 4) {
+    reasons.push(`strong schedule ${fmtSigned(fighter.schedule_strength_adjustment)}`);
+  }
   if (num(fighter.recent_activity_adjustment) >= 10) {
     reasons.push(`activity ${fmtSigned(fighter.recent_activity_adjustment)}`);
   }

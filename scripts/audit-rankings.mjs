@@ -91,7 +91,7 @@ function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, div
         });
       }
 
-      if (num(fighter.ufc_division_fights) < 4 && fighter.current_status !== "Champion") {
+      if (isProspectOverboost(fighter, ranked)) {
         checks.prospect_overboost.push({
           division: division.division,
           rank: fighter.rank,
@@ -176,6 +176,7 @@ function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, div
       const winner = byName.get(normalizeName(impact.winner_name));
       const loser = byName.get(normalizeName(impact.loser_name));
       if (!winner || !loser || loser.current_status === "Champion") continue;
+      if (hasDamagingLossAfter(winner, impact.event_date)) continue;
       if (winner.rank > loser.rank) {
         checks.recent_head_to_head.push({
           division: division.division,
@@ -226,6 +227,47 @@ function getDefaultTitleContextRank(tag) {
   if (tag === "recent_title_challenger") return 5;
   if (tag === "former_champion") return 6;
   return null;
+}
+
+function isProspectOverboost(fighter, ranked) {
+  if (fighter.current_status === "Champion") return false;
+  if (num(fighter.ufc_division_fights) >= 4) return false;
+
+  const rankedNames = new Set(ranked.map((entry) => normalizeName(entry.fighter_name)));
+  const rankedWins = countRankedWins(fighter, rankedNames);
+  const transferContext =
+    Boolean(fighter.division_context_status || fighter.transfer_source_division) ||
+    (fighter.source_division && fighter.display_division && fighter.source_division !== fighter.display_division);
+  const titleLineageContext = num(fighter.title_win_adjustment) > 0 || Boolean(fighter.title_context_status);
+  const strongBestWin = num(fighter.quality_win_adjustment) >= 18 || num(fighter.best_win?.adjusted_opponent_rating) >= 1600;
+  const alreadyPenalized = Boolean(fighter.entry_gate_status) || num(fighter.entry_gate_penalty) > 0;
+  const multipleQualityWins = countQualityWins(fighter) >= 2;
+
+  if (alreadyPenalized) return false;
+  return !(transferContext || titleLineageContext || strongBestWin || rankedWins > 0 || multipleQualityWins);
+}
+
+function countRankedWins(fighter, rankedNames) {
+  return (fighter.last_five ?? []).filter(
+    (fight) => fight.result === "W" && rankedNames.has(normalizeName(fight.opponent_name)),
+  ).length;
+}
+
+function countQualityWins(fighter) {
+  return (fighter.last_five ?? []).filter((fight) => fight.result === "W" && num(fight.rating_change) >= 16).length;
+}
+
+function hasDamagingLossAfter(fighter, date) {
+  return (fighter.last_five ?? []).some(
+    (fight) =>
+      fight.result === "L" &&
+      fight.date > date &&
+      (isFinish(fight.method) || num(fight.rating_change) <= -18),
+  );
+}
+
+function isFinish(methodName) {
+  return /ko\/tko|submission|doctor|could not continue|dq/i.test(methodName ?? "");
 }
 
 function buildSnapshotDataQualityChecks(currentSnapshot) {
