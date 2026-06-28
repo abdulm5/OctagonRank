@@ -115,6 +115,35 @@ function flaggedIssuesSection(audit) {
       "No recent head-to-head violations.",
     ),
     issueTable(
+      "## Elite Snapshot Drift",
+      checks.elite_snapshot_drift ?? [],
+      ["Division", "Fighter", "Snapshot", "Actual Rank", "Expected Max", "Title Context", "Rank Guard"],
+      (row) => [
+        row.division,
+        row.fighter,
+        row.current_status,
+        row.actual_rank,
+        row.max_expected_rank,
+        row.title_context_status || "none",
+        row.rank_guard_status || "none",
+      ],
+      "No elite snapshot drift flags.",
+    ),
+    issueTable(
+      "## Justified Elite Snapshot Drift",
+      checks.justified_elite_snapshot_drift ?? [],
+      ["Division", "Fighter", "Snapshot", "Actual Rank", "Expected Max", "Reason"],
+      (row) => [
+        row.division,
+        row.fighter,
+        row.current_status,
+        row.actual_rank,
+        row.max_expected_rank,
+        row.justification,
+      ],
+      "No justified elite snapshot drift cases.",
+    ),
+    issueTable(
       "## Inactive Top-Ranked Fighters",
       checks.inactive_top_ranked ?? [],
       ["Division", "Rank", "Fighter", "Months Inactive"],
@@ -183,6 +212,12 @@ function nextTuningSection(audit) {
   const summary = audit.summary ?? {};
   if (num(summary.recent_head_to_head_violations) > 0) {
     items.push("Review the remaining head-to-head flags first. These usually show where the resolver is too narrow or where a post-fight loss should matter more.");
+  }
+  if (num(summary.elite_snapshot_drift) > 0) {
+    items.push("Review elite snapshot drift flags; these usually mean a recent champion, title loser, or top contender is missing title-lineage context or has an overly capped rank guard.");
+  }
+  if (num(summary.justified_elite_snapshot_drift) > 0) {
+    items.push("Review justified elite snapshot drift only if the explanation looks too harsh; these are top snapshot fighters the model deliberately moved down due to losses, weak schedule, or legacy decay.");
   }
   if (num(summary.prospect_overboost) > 0) {
     items.push("Tune the entry-gate rule so low-sample fighters need either a ranked win, multiple quality wins, or a very strong adjusted best win.");
@@ -267,11 +302,17 @@ function explainFighter(fighter) {
   } else if (num(fighter.schedule_strength_adjustment) >= 4) {
     reasons.push(`strong schedule ${fmtSigned(fighter.schedule_strength_adjustment)}`);
   }
+  if (num(fighter.dominant_wins_last_5) >= 2) {
+    reasons.push(`${fighter.dominant_wins_last_5} dominant recent wins`);
+  }
   if (num(fighter.recent_activity_adjustment) >= 10) {
     reasons.push(`activity ${fmtSigned(fighter.recent_activity_adjustment)}`);
   }
   if (num(fighter.title_win_adjustment) > 0) {
     reasons.push(`title-lineage win ${fmtSigned(fighter.title_win_adjustment)}`);
+  }
+  if (num(fighter.elite_resume_adjustment) >= 6) {
+    reasons.push(`elite resume ${fmtSigned(fighter.elite_resume_adjustment)} (${fighter.elite_resume_tier || "resume"})`);
   }
   if (num(fighter.quality_win_adjustment) >= 15 && fighter.best_win?.opponent_name) {
     reasons.push(`best win ${fighter.best_win.opponent_name} (+${fmt(fighter.quality_win_adjustment)})`);
@@ -330,7 +371,8 @@ function severityFor(check, count) {
   const value = num(count);
   if (value === 0) return "clear";
   if (check === "champion_failures" || check === "title_context_failures") return "high";
-  if (check === "recent_head_to_head_violations" || check === "old_opponent_overcredit") return "medium";
+  if (check === "recent_head_to_head_violations" || check === "elite_snapshot_drift" || check === "old_opponent_overcredit") return "medium";
+  if (check === "justified_elite_snapshot_drift") return "review";
   if (check === "prospect_overboost" || check === "inactive_top_ranked") return "medium";
   return "review";
 }

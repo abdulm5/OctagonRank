@@ -4,6 +4,53 @@
   "notes": "Used by the ranking-policy layer for context the base fight-stat model should not infer from Elo alone. These entries are visible adjustments, not hidden rank overrides.",
   "divisions": [
     {
+      "division": "Lightweight",
+      "title_context": [
+        {
+          "fighter": "Ilia Topuria",
+          "tag": "recent_title_loser",
+          "event_date": "2026-06-14",
+          "max_overall_rank": 2,
+          "protection_months": 18,
+          "expires_after_loss": true,
+          "note": "Recent lightweight title loser should remain the #1 contender unless he loses again, becomes inactive, or the protection window expires."
+        },
+        {
+          "fighter": "Max Holloway",
+          "tag": "former_champion",
+          "event_date": "2016-12-10",
+          "max_overall_rank": 8,
+          "protection_months": 144,
+          "expires_after_loss": false,
+          "note": "Former champion context follows Holloway into lightweight because his cross-division resume and recent lightweight wins should not be treated like a normal contender sample."
+        },
+        {
+          "fighter": "Charles Oliveira",
+          "tag": "former_champion",
+          "event_date": "2021-05-15",
+          "max_overall_rank": 8,
+          "rank_policy": false,
+          "protection_months": 96,
+          "expires_after_loss": false,
+          "note": "Former lightweight champion context is kept for opponent-quality credit without adding extra rank protection."
+        }
+      ]
+    },
+    {
+      "division": "Featherweight",
+      "title_context": [
+        {
+          "fighter": "Aljamain Sterling",
+          "tag": "former_champion",
+          "event_date": "2021-03-06",
+          "max_overall_rank": 8,
+          "protection_months": 84,
+          "expires_after_loss": false,
+          "note": "Former bantamweight champion context follows Sterling into featherweight so his small new-division sample is not treated like a normal unproven contender."
+        }
+      ]
+    },
+    {
       "division": "Welterweight",
       "title_context": [
         {
@@ -128,6 +175,16 @@
           "protection_months": 72,
           "expires_after_loss": false,
           "note": "Older former champion context is retained mainly for opponent-quality credit."
+        },
+        {
+          "fighter": "Jamahal Hill",
+          "tag": "former_champion",
+          "event_date": "2023-01-21",
+          "max_overall_rank": 12,
+          "rank_policy": false,
+          "protection_months": 60,
+          "expires_after_loss": false,
+          "note": "Former champion context gives opponent-quality credit to fighters who beat Hill, but recent losses keep him from receiving automatic rank protection."
         }
       ]
     },

@@ -24,6 +24,11 @@ const ELITE_HEAD_TO_HEAD_WINDOW_MONTHS = 36;
 const ELITE_HEAD_TO_HEAD_SCORE_WINDOW = 80;
 const OLD_FIGHTER_AGE = 36;
 const VERY_OLD_FIGHTER_AGE = 39;
+const PROVEN_OPPONENT_RATING = 1560;
+const ELITE_OPPONENT_RATING = 1600;
+const CHAMPIONSHIP_OPPONENT_RATING = 1625;
+const ELITE_RESUME_RATING = 1600;
+const CHAMPIONSHIP_RESUME_RATING = 1660;
 
 const CURRENT_DIVISIONS = [
   "Flyweight",
@@ -169,11 +174,16 @@ async function main() {
       schedule_strength_status: fighter.schedule_strength_status,
       avg_win_opponent_rating_last_5: fighter.avg_win_opponent_rating_last_5,
       best_win_opponent_rating_last_5: fighter.best_win_opponent_rating_last_5,
+      dominant_wins_last_5: fighter.dominant_wins_last_5,
       recent_activity_adjustment: fighter.recent_activity_adjustment,
       dominance_adjustment: fighter.dominance_adjustment,
       finish_adjustment: fighter.finish_adjustment,
       round_dominance_adjustment: fighter.round_dominance_adjustment,
       title_win_adjustment: fighter.title_win_adjustment,
+      elite_resume_adjustment: fighter.elite_resume_adjustment,
+      elite_resume_score: fighter.elite_resume_score,
+      elite_resume_tier: fighter.elite_resume_tier,
+      elite_resume_summary: fighter.elite_resume_summary,
       quality_win_adjustment: fighter.quality_win_adjustment,
       division_context_status: fighter.division_context_status,
       division_context_note: fighter.division_context_note,
@@ -204,7 +214,7 @@ async function main() {
   );
 
   const output = {
-    model_version: "v0.8.3-schedule-strength",
+    model_version: "v0.8.4-elite-resume",
     generated_at: new Date().toISOString(),
     as_of: toIsoDate(asOfDate),
     source: summary.source ?? "ufcstats.com",
@@ -246,11 +256,12 @@ async function main() {
       result_confidence: "Manual annotations and low-repeatability stat patterns dampen noisy outcomes without deleting the official result.",
       recent_form_adjustment: "Recent wins and recent Elo movement add or remove points from the post-fight rating.",
       recent_outcome_adjustment: "The latest result adds a small recency check, with recent finish losses penalized more than decision losses.",
-      schedule_strength_adjustment: "Recent win streaks are capped when built on weak opponent quality, while strong recent schedules receive a small bonus.",
+      schedule_strength_adjustment: "Recent win streaks are capped when built on weak opponent quality, while strong recent schedules and dominant wins receive credit.",
       recent_activity_adjustment: "Fighters get a small positive bump for recent ranked activity before inactivity penalties are applied.",
       dominance_adjustment: "Average dominance across fights becomes a bounded score adjustment, not just a hidden Elo multiplier.",
       finish_adjustment: "A fighter's finish rate adds a small bonus, while low finish rates get a small penalty.",
       title_win_adjustment: "Recent wins over fighters with title-lineage context add visible resume credit.",
+      elite_resume_adjustment: "Career-level elite value is calculated from peak rating, elite wins, title-lineage wins, and years spent around elite opposition, then dampened by recent decline.",
       quality_win_adjustment: "The best win adds value based on opponent rating, with older best wins and older declining opponents dampened.",
       inactivity_penalty: "Fighters keep rating value, but lose final-score confidence after 12 months without a fight.",
       legacy_penalty: "High raw ratings are dampened when they are supported mostly by older peak wins rather than recent ranked activity.",
@@ -339,6 +350,7 @@ function processFight({
   const repeatability = getRepeatabilityMultiplier(fight, dominance, roundDominance);
   const opponentContext = calculateOpponentContext({
     opponent: loser,
+    opponentCareerStates: getCareerFighterStates(divisionRatings, loserName),
     opponentProfile: fighterProfiles.get(loserId),
     opponentTitleContexts: titleContextByFighter.get(normalizeName(loserName)) ?? [],
     fightDate: fight.event_date,
@@ -416,6 +428,9 @@ function processFight({
     opponent_adjusted_rating: opponentContext.adjustedRating,
     opponent_age_at_fight: opponentContext.ageAtFight,
     opponent_form_score: opponentContext.formScore,
+    opponent_elite_resume_bonus: opponentContext.eliteResumeBonus,
+    opponent_elite_resume_score: opponentContext.eliteResumeScore,
+    opponent_elite_resume_tier: opponentContext.eliteResumeTier,
     opponent_context_reason: opponentContext.reasons.join("|"),
     result_confidence: resultConfidence,
     annotation_tags: annotationContext.tags.join("|"),
@@ -428,6 +443,7 @@ function processFight({
 
 function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapshot, titleContext, divisionContext, fightImpacts }) {
   const fighterIndex = buildFighterIndex(divisionRatings, asOfDate);
+  const careerEliteResumeByFighter = buildCareerEliteResumeByFighter(divisionRatings, asOfDate);
   const snapshotByDivision = new Map((currentSnapshot?.divisions ?? []).map((division) => [division.division, division]));
   const titleContextByDivision = new Map((titleContext?.divisions ?? []).map((division) => [division.division, division]));
   const divisionContextByFighter = buildDivisionContextByFighter(divisionContext);
@@ -443,6 +459,7 @@ function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapsho
         sourceDivision: divisionName,
         asOfDate,
         args,
+        careerEliteResume: careerEliteResumeByFighter.get(normalizeName(fighter.name)),
       }),
     );
 
@@ -456,6 +473,7 @@ function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapsho
           args,
           titleContextDivision: titleContextByDivision.get(divisionName),
           divisionContextByFighter,
+          careerEliteResumeByFighter,
           fightImpacts,
         })
       : rawCandidates
@@ -482,6 +500,7 @@ function buildCurrentSnapshotRankings({
   args,
   titleContextDivision,
   divisionContextByFighter,
+  careerEliteResumeByFighter,
   fightImpacts,
 }) {
   const rawByName = new Map(rawCandidates.map((candidate) => [normalizeName(candidate.fighter_name), candidate]));
@@ -515,6 +534,7 @@ function buildCurrentSnapshotRankings({
             displayDivision: divisionName,
             divisionMove,
           }),
+          careerEliteResume: careerEliteResumeByFighter.get(normalizedName),
         })
       : null;
     const baseCandidate = chooseSnapshotCandidate({ currentDivisionCandidate, transferCandidate, divisionMove }) ??
@@ -682,7 +702,7 @@ function getRankGuard(candidate) {
 
   const snapshotRank = Number(candidate.current_snapshot_rank);
   if (!Number.isFinite(snapshotRank) || snapshotRank <= 0) return null;
-  if (snapshotRank > 6) return null;
+  if (snapshotRank > 10) return null;
 
   const confidence = calculateRankGuardConfidence(candidate);
   let maxRank = null;
@@ -696,8 +716,9 @@ function getRankGuard(candidate) {
   } else if (snapshotRank <= 5) {
     if (confidence >= 0.75) maxRank = 6;
     else if (confidence >= 0.6) maxRank = 8;
-  } else if (confidence >= 0.8) {
-    maxRank = 9;
+  } else {
+    if (confidence >= 0.65) maxRank = 9;
+    else if (confidence >= 0.55) maxRank = 10;
   }
 
   if (maxRank === null) return null;
@@ -731,7 +752,10 @@ function calculateRankGuardConfidence(candidate) {
   if (num(candidate.quality_win_adjustment) >= 20) confidence += 0.14;
   else if (num(candidate.quality_win_adjustment) >= 12) confidence += 0.08;
   if (num(candidate.title_win_adjustment) > 0) confidence += 0.08;
+  if (num(candidate.elite_resume_adjustment) >= 12) confidence += 0.08;
+  else if (num(candidate.elite_resume_adjustment) >= 6) confidence += 0.04;
   if (num(candidate.average_round_dominance) >= 56) confidence += 0.06;
+  if (num(candidate.dominant_wins_last_5) >= 2) confidence += 0.08;
 
   if (candidate.entry_gate_status) confidence -= 0.18;
   if (num(candidate.inactivity_penalty) >= 20) confidence -= 0.14;
@@ -1024,17 +1048,19 @@ function calculateCurrentDivisionOverlayAdjustment(candidate) {
   return round(recordAdjustment + trendAdjustment + roundAdjustment, 2);
 }
 
-function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, args, transferPenalty = 0 }) {
+function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, args, transferPenalty = 0, careerEliteResume = null }) {
   const monthsInactive = monthsBetween(new Date(fighter.lastFightDate), asOfDate);
   const inactivityPenalty = calculateInactivityPenalty(monthsInactive);
   const baseRating = fighter.rating - transferPenalty;
   const legacy = calculateLegacyPenalty(fighter, asOfDate, baseRating);
+  const eliteResume = careerEliteResume ?? calculateEliteResume(fighter, asOfDate);
   const averageDominance = fighter.dominanceSamples > 0 ? fighter.dominanceTotal / fighter.dominanceSamples : 50;
   const averageRoundDominance =
     fighter.roundDominanceSamples > 0 ? fighter.roundDominanceTotal / fighter.roundDominanceSamples : 50;
   const scoreComponents = calculateScoreComponents({
     fighter,
     legacy,
+    eliteResume,
     averageDominance,
     averageRoundDominance,
     monthsInactive,
@@ -1049,6 +1075,7 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     scoreComponents.roundDominanceAdjustment +
     scoreComponents.finishAdjustment +
     scoreComponents.titleWinAdjustment +
+    scoreComponents.eliteResumeAdjustment +
     scoreComponents.qualityWinAdjustment -
     inactivityPenalty -
     legacy.penalty;
@@ -1086,11 +1113,16 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     schedule_strength_status: scoreComponents.scheduleStrengthStatus,
     avg_win_opponent_rating_last_5: scoreComponents.avgWinOpponentRatingLast5,
     best_win_opponent_rating_last_5: scoreComponents.bestWinOpponentRatingLast5,
+    dominant_wins_last_5: scoreComponents.dominantWinsLast5,
     recent_activity_adjustment: scoreComponents.recentActivityAdjustment,
     dominance_adjustment: scoreComponents.dominanceAdjustment,
     round_dominance_adjustment: scoreComponents.roundDominanceAdjustment,
     finish_adjustment: scoreComponents.finishAdjustment,
     title_win_adjustment: scoreComponents.titleWinAdjustment,
+    elite_resume_adjustment: scoreComponents.eliteResumeAdjustment,
+    elite_resume_score: scoreComponents.eliteResumeScore,
+    elite_resume_tier: scoreComponents.eliteResumeTier,
+    elite_resume_summary: scoreComponents.eliteResumeSummary,
     quality_win_adjustment: scoreComponents.qualityWinAdjustment,
     source_division: sourceDivision,
     display_division: displayDivision,
@@ -1160,11 +1192,16 @@ function makeSyntheticCandidate({ name, divisionName, args }) {
     schedule_strength_status: "",
     avg_win_opponent_rating_last_5: "",
     best_win_opponent_rating_last_5: "",
+    dominant_wins_last_5: 0,
     recent_activity_adjustment: 0,
     dominance_adjustment: 0,
     round_dominance_adjustment: 0,
     finish_adjustment: 0,
     title_win_adjustment: 0,
+    elite_resume_adjustment: 0,
+    elite_resume_score: 0,
+    elite_resume_tier: "",
+    elite_resume_summary: "",
     quality_win_adjustment: 0,
     source_division: divisionName,
     display_division: divisionName,
@@ -1272,6 +1309,9 @@ function updateFighterAggregate({
         opponent_form_score: opponentContext?.formScore ?? "",
         opponent_quality_multiplier: opponentContext?.ratingMultiplier ?? "",
         opponent_context_reasons: opponentContext?.reasons ?? [],
+        opponent_elite_resume_bonus: opponentContext?.eliteResumeBonus ?? "",
+        opponent_elite_resume_score: opponentContext?.eliteResumeScore ?? "",
+        opponent_elite_resume_tier: opponentContext?.eliteResumeTier ?? "",
         method: fight.method,
       };
     }
@@ -1287,8 +1327,13 @@ function updateFighterAggregate({
     opponent_adjusted_rating: round(opponentContext?.adjustedRating ?? opponentPreRating, 2),
     opponent_form_score: opponentContext?.formScore ?? "",
     opponent_context_reasons: opponentContext?.reasons ?? [],
+    opponent_elite_resume_bonus: opponentContext?.eliteResumeBonus ?? "",
+    opponent_elite_resume_score: opponentContext?.eliteResumeScore ?? "",
+    opponent_elite_resume_tier: opponentContext?.eliteResumeTier ?? "",
     method: fight.method,
     rating_change: round(ratingChange, 2),
+    dominance_score: round(dominanceScore, 1),
+    round_dominance_score: round(roundDominanceScore, 1),
     opponent_title_context: opponentContext?.titleContextTag ?? "",
   });
 
@@ -1374,8 +1419,13 @@ function updateNoDecisionFighterAggregate({
     opponent_adjusted_rating: round(opponent.rating, 2),
     opponent_form_score: "",
     opponent_context_reasons: [],
+    opponent_elite_resume_bonus: "",
+    opponent_elite_resume_score: "",
+    opponent_elite_resume_tier: "",
     method: fight.method,
     rating_change: 0,
+    dominance_score: round(dominanceScore, 1),
+    round_dominance_score: round(roundDominanceScore, 1),
     opponent_title_context: "",
   });
   fighter.dominanceTotal += dominanceScore;
@@ -1572,7 +1622,14 @@ function getRepeatabilityMultiplier(fight, dominance, roundDominance) {
   };
 }
 
-function calculateOpponentContext({ opponent, opponentProfile, opponentTitleContexts, fightDate, opponentPreRating }) {
+function calculateOpponentContext({
+  opponent,
+  opponentCareerStates = [opponent],
+  opponentProfile,
+  opponentTitleContexts,
+  fightDate,
+  opponentPreRating,
+}) {
   const fightDateValue = new Date(fightDate);
   const ageAtFight = calculateAgeAtDate(opponentProfile?.dob_iso, fightDateValue);
   const recentWindowMonths = 30;
@@ -1641,6 +1698,21 @@ function calculateOpponentContext({ opponent, opponentProfile, opponentTitleCont
     }
   }
 
+  const eliteResume = calculateCareerEliteResume(opponentCareerStates, fightDateValue);
+  const eliteResumeBonus = calculateOpponentEliteResumeBonus({
+    eliteResume,
+    opponentPreRating,
+    ageAtFight,
+    recentWins,
+    recentLosses,
+    losingStreak,
+    monthsInactive,
+  });
+  if (eliteResumeBonus > 0) {
+    ratingAdjustment += eliteResumeBonus;
+    reasons.push(`elite_resume:${eliteResume.tier}`);
+  }
+
   const formScore = round(
     recentWins * 10 -
       recentLosses * 10 +
@@ -1659,6 +1731,9 @@ function calculateOpponentContext({ opponent, opponentProfile, opponentTitleCont
     formScore,
     ratingMultiplier,
     titleContextTag: titleContext?.tag ?? "",
+    eliteResumeBonus,
+    eliteResumeScore: eliteResume.score,
+    eliteResumeTier: eliteResume.tier,
     reasons,
   };
 }
@@ -1714,6 +1789,197 @@ function getAnnotationContext(annotation) {
     multiplier: round(clamp(multiplier, 0.35, 1), 4),
     tags,
   };
+}
+
+function getCareerFighterStates(divisionRatings, fighterName) {
+  const normalizedName = normalizeName(fighterName);
+  const states = [];
+  for (const fighters of divisionRatings.values()) {
+    for (const fighter of fighters.values()) {
+      if (normalizeName(fighter.name) === normalizedName) states.push(fighter);
+    }
+  }
+  return states;
+}
+
+function buildCareerEliteResumeByFighter(divisionRatings, asOfDate) {
+  const statesByFighter = new Map();
+  for (const fighters of divisionRatings.values()) {
+    for (const fighter of fighters.values()) {
+      const normalizedName = normalizeName(fighter.name);
+      if (!statesByFighter.has(normalizedName)) statesByFighter.set(normalizedName, []);
+      statesByFighter.get(normalizedName).push(fighter);
+    }
+  }
+
+  const index = new Map();
+  for (const [normalizedName, fighterStates] of statesByFighter.entries()) {
+    index.set(normalizedName, calculateCareerEliteResume(fighterStates, asOfDate));
+  }
+  return index;
+}
+
+function calculateCareerEliteResume(fighterStates, asOfDate) {
+  if (fighterStates.length === 1) return calculateEliteResume(fighterStates[0], asOfDate);
+
+  const allFights = fighterStates
+    .flatMap((fighter) => fighter.lastFive ?? [])
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const allHistory = fighterStates
+    .flatMap((fighter) => fighter.ratingHistory ?? [])
+    .sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
+  const latestFightDate = allFights.reduce((latest, fight) => (fight.date > latest ? fight.date : latest), "");
+
+  return calculateEliteResume(
+    {
+      rating: Math.max(...fighterStates.map((fighter) => num(fighter.rating)), 0),
+      fights: fighterStates.reduce((total, fighter) => total + num(fighter.fights), 0),
+      lastFightDate: latestFightDate,
+      lastFive: allFights,
+      ratingHistory: allHistory,
+    },
+    asOfDate,
+  );
+}
+
+function calculateEliteResume(fighter, asOfDate) {
+  const fights = [...(fighter.lastFive ?? [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const wins = fights.filter((fight) => fight.result === "W");
+  const losses = fights.filter((fight) => fight.result === "L");
+  const ratingHistory = fighter.ratingHistory ?? [];
+  const peakRating = Math.max(
+    num(fighter.rating),
+    ...ratingHistory.flatMap((entry) => [num(entry.pre_rating), num(entry.post_rating)]),
+  );
+  const eliteWins = wins.filter((fight) => isEliteResumeWin(fight)).length;
+  const provenWins = wins.filter((fight) => getFightOpponentRating(fight) >= PROVEN_OPPONENT_RATING).length;
+  const championshipWins = wins.filter((fight) => isChampionshipResumeWin(fight)).length;
+  const titleLineageWins = wins.filter((fight) => Boolean(fight.opponent_title_context)).length;
+  const eliteLosses = losses.filter((fight) => getFightOpponentRating(fight) >= ELITE_OPPONENT_RATING).length;
+  const nonEliteLosses = losses.filter((fight) => getFightOpponentRating(fight) < PROVEN_OPPONENT_RATING).length;
+  const eliteDates = getEliteResumeDates({ fights, ratingHistory });
+  const eliteSpanMonths =
+    eliteDates.length >= 2 ? monthsBetween(new Date(eliteDates[0]), new Date(eliteDates.at(-1))) : 0;
+
+  const score =
+    clamp((peakRating - ELITE_RESUME_RATING) * 0.28, 0, 30) +
+    Math.min(eliteWins * 5, 24) +
+    Math.min(championshipWins * 3, 12) +
+    Math.min(titleLineageWins * 3, 12) +
+    Math.min(provenWins * 1.1, 10) +
+    Math.min((eliteSpanMonths / 12) * 2.2, 18) +
+    Math.min(eliteLosses * 0.8, 6) -
+    Math.min(nonEliteLosses * 1.5, 8);
+  const boundedScore = round(clamp(score, 0, 100), 1);
+
+  return {
+    score: boundedScore,
+    tier: getEliteResumeTier(boundedScore),
+    peakRating: round(peakRating, 2),
+    eliteWins,
+    provenWins,
+    championshipWins,
+    titleLineageWins,
+    eliteLosses,
+    nonEliteLosses,
+    eliteSpanMonths: round(eliteSpanMonths, 1),
+    summary: summarizeEliteResume({
+      score: boundedScore,
+      peakRating,
+      eliteWins,
+      championshipWins,
+      titleLineageWins,
+      eliteSpanMonths,
+    }),
+  };
+}
+
+function getEliteResumeDates({ fights, ratingHistory }) {
+  const dates = [];
+  for (const entry of ratingHistory) {
+    if (num(entry.pre_rating) >= ELITE_RESUME_RATING || num(entry.post_rating) >= ELITE_RESUME_RATING) {
+      dates.push(entry.event_date);
+    }
+  }
+  for (const fight of fights) {
+    if (
+      getFightOpponentRating(fight) >= ELITE_OPPONENT_RATING ||
+      Boolean(fight.opponent_title_context)
+    ) {
+      dates.push(fight.date);
+    }
+  }
+  return [...new Set(dates.filter(Boolean))].sort();
+}
+
+function isEliteResumeWin(fight) {
+  return getFightOpponentRating(fight) >= ELITE_OPPONENT_RATING || Boolean(fight.opponent_title_context);
+}
+
+function isChampionshipResumeWin(fight) {
+  return (
+    getFightOpponentRating(fight) >= CHAMPIONSHIP_OPPONENT_RATING ||
+    ["recent_champion", "recent_title_loser", "interim_champion"].includes(fight.opponent_title_context)
+  );
+}
+
+function getEliteResumeTier(score) {
+  if (score >= 75) return "long_term_elite";
+  if (score >= 55) return "elite";
+  if (score >= 35) return "proven_elite";
+  return "";
+}
+
+function summarizeEliteResume({ score, peakRating, eliteWins, championshipWins, titleLineageWins, eliteSpanMonths }) {
+  if (score < 35) return "";
+  const parts = [`peak ${round(peakRating, 0)}`];
+  if (eliteWins > 0) parts.push(`${eliteWins} elite win${eliteWins === 1 ? "" : "s"}`);
+  if (championshipWins > 0) parts.push(`${championshipWins} championship-level win${championshipWins === 1 ? "" : "s"}`);
+  if (titleLineageWins > 0) parts.push(`${titleLineageWins} title-lineage win${titleLineageWins === 1 ? "" : "s"}`);
+  if (eliteSpanMonths >= 18) parts.push(`${round(eliteSpanMonths / 12, 1)}y elite span`);
+  return parts.join("; ");
+}
+
+function calculateEliteResumeAdjustment(eliteResume, legacy, monthsInactive) {
+  if (!eliteResume || eliteResume.score < 35) return 0;
+
+  let factor = 1;
+  if (legacy.recentLosses > legacy.recentWins) factor -= 0.18;
+  if (legacy.recentRatingChange < -25) factor -= 0.12;
+  if (monthsInactive > 12) factor -= clamp((monthsInactive - 12) * 0.025, 0, 0.28);
+  if (eliteResume.nonEliteLosses >= 2) factor -= 0.08;
+
+  const adjustment = clamp(eliteResume.score * 0.22, 0, 18) * clamp(factor, 0.45, 1);
+  return round(clamp(adjustment, 0, 18), 2);
+}
+
+function calculateOpponentEliteResumeBonus({
+  eliteResume,
+  opponentPreRating,
+  ageAtFight,
+  recentWins,
+  recentLosses,
+  losingStreak,
+  monthsInactive,
+}) {
+  if (!eliteResume || eliteResume.score < 35) return 0;
+  if (opponentPreRating < 1540 && eliteResume.score < 75) return 0;
+  if (opponentPreRating < 1500) return 0;
+
+  let factor = 1;
+  if (recentLosses > recentWins) factor -= 0.18;
+  if (losingStreak >= 4) factor -= 0.35;
+  else if (losingStreak >= 2) factor -= 0.2;
+  if (Number.isFinite(monthsInactive) && monthsInactive > 18) factor -= 0.12;
+  if (Number.isFinite(ageAtFight) && ageAtFight >= VERY_OLD_FIGHTER_AGE) factor -= 0.15;
+  if (opponentPreRating < ELITE_OPPONENT_RATING) factor -= 0.1;
+
+  const rawBonus = clamp(eliteResume.score * 0.2, 0, 16);
+  const bonus = rawBonus * clamp(factor, 0.25, 1);
+  if (eliteResume.score >= 55 && opponentPreRating >= 1580) {
+    return round(Math.max(bonus, 10), 2);
+  }
+  return round(clamp(bonus, 0, 16), 2);
 }
 
 function calculateInactivityPenalty(monthsInactive) {
@@ -1775,7 +2041,7 @@ function calculateLegacyPenalty(fighter, asOfDate, baseRating) {
   };
 }
 
-function calculateScoreComponents({ fighter, legacy, averageDominance, averageRoundDominance, monthsInactive }) {
+function calculateScoreComponents({ fighter, legacy, eliteResume, averageDominance, averageRoundDominance, monthsInactive }) {
   const recentRecordAdjustment = clamp((legacy.recentWins - legacy.recentLosses) * 8, -24, 24);
   const recentTrendAdjustment = clamp(legacy.recentRatingChange * 0.25, -20, 20);
   const recentFormAdjustment = round(recentRecordAdjustment + recentTrendAdjustment, 2);
@@ -1791,6 +2057,7 @@ function calculateScoreComponents({ fighter, legacy, averageDominance, averageRo
   const finishRate = fighter.fights > 0 ? fighter.finishes / fighter.fights : 0;
   const finishAdjustment = round(clamp((finishRate - 0.35) * 24, -8, 14), 2);
   const titleWinAdjustment = calculateTitleWinAdjustment(fighter.lastFive);
+  const eliteResumeAdjustment = calculateEliteResumeAdjustment(eliteResume, legacy, monthsInactive);
   const qualityWinAdjustment = calculateQualityWinAdjustment(fighter.bestWin, legacy.bestWinAgeMonths);
 
   return {
@@ -1801,11 +2068,16 @@ function calculateScoreComponents({ fighter, legacy, averageDominance, averageRo
     scheduleStrengthStatus: scheduleStrength.status,
     avgWinOpponentRatingLast5: scheduleStrength.avgWinOpponentRatingLast5,
     bestWinOpponentRatingLast5: scheduleStrength.bestWinOpponentRatingLast5,
+    dominantWinsLast5: scheduleStrength.dominantWinsLast5,
     recentActivityAdjustment,
     dominanceAdjustment,
     roundDominanceAdjustment,
     finishAdjustment,
     titleWinAdjustment,
+    eliteResumeAdjustment,
+    eliteResumeScore: eliteResume?.score ?? 0,
+    eliteResumeTier: eliteResume?.tier ?? "",
+    eliteResumeSummary: eliteResume?.summary ?? "",
     qualityWinAdjustment,
   };
 }
@@ -1819,6 +2091,7 @@ function calculateScheduleStrength({ fights, recentFormAdjustment, totalFights }
   const bestWinRating = winRatings.length > 0 ? Math.max(...winRatings) : NaN;
   const provenWins = wins.filter((fight) => isProvenScheduleWin(fight)).length;
   const eliteWins = wins.filter((fight) => isEliteScheduleWin(fight)).length;
+  const dominantWins = wins.filter((fight) => isDominantScheduleWin(fight)).length;
   const titleLineageWins = wins.filter((fight) => Boolean(fight.opponent_title_context)).length;
   const latestFight = recentFights.at(-1);
 
@@ -1866,11 +2139,15 @@ function calculateScheduleStrength({ fights, recentFormAdjustment, totalFights }
   }
 
   if (isEliteExposureLoss({ latestFight, previousFights: recentFights.slice(0, -1), totalFights })) {
-    adjustment -= 10;
+    const exposurePenalty = dominantWins >= 2 ? 4 : dominantWins === 1 ? 7 : 10;
+    adjustment -= exposurePenalty;
     statuses.push("elite_exposure_loss");
+    if (dominantWins >= 2) statuses.push("dominant_win_cushion");
   }
 
-  const score = Number.isFinite(avgWinRating) ? clamp((avgWinRating - 1500) / 1.6 + provenWins * 8 + eliteWins * 5, 0, 100) : NaN;
+  const score = Number.isFinite(avgWinRating)
+    ? clamp((avgWinRating - 1500) / 1.6 + provenWins * 8 + eliteWins * 5 + dominantWins * 4, 0, 100)
+    : NaN;
 
   return {
     adjustment: round(clamp(adjustment, -30, 10), 2),
@@ -1878,6 +2155,7 @@ function calculateScheduleStrength({ fights, recentFormAdjustment, totalFights }
     status: statuses.join("|"),
     avgWinOpponentRatingLast5: Number.isFinite(avgWinRating) ? round(avgWinRating, 2) : "",
     bestWinOpponentRatingLast5: Number.isFinite(bestWinRating) ? round(bestWinRating, 2) : "",
+    dominantWinsLast5: dominantWins,
   };
 }
 
@@ -1892,6 +2170,11 @@ function isEliteScheduleWin(fight) {
     opponentRating >= 1625 ||
     ["recent_champion", "recent_title_loser", "interim_champion"].includes(fight.opponent_title_context)
   );
+}
+
+function isDominantScheduleWin(fight) {
+  if (fight.result !== "W") return false;
+  return num(fight.dominance_score) >= 62 || num(fight.round_dominance_score) >= 62;
 }
 
 function isEliteExposureLoss({ latestFight, previousFights, totalFights }) {

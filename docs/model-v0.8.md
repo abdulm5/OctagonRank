@@ -1,4 +1,4 @@
-# Model v0.8: Division Context, Round Dominance, and Backtesting
+# Model v0.8: Division Context, Elite Resume, and Backtesting
 
 This model pass keeps the v0.7 Elo/opponent-context backbone and adds several
 implemented upgrades:
@@ -9,6 +9,7 @@ implemented upgrades:
 - no-contest activity handling,
 - latest-result adjustment for recent losses,
 - schedule-strength adjustment for inflated win streaks,
+- automatic elite-resume scoring for long-term elite fighters,
 - a first predictive backtest using pre-fight model ratings.
 
 ## Current Inputs
@@ -60,8 +61,17 @@ staying too high immediately after a damaging loss.
 `schedule_strength_adjustment`
 : Measures the opponent quality behind the last-five resume. Recent streaks
 against weaker opposition can be capped, while wins over proven or
-title-lineage opponents receive a small bonus. A damaging loss in the first
-elite test after a weaker streak is marked as `elite_exposure_loss`.
+title-lineage opponents receive a small bonus. Dominant wins over weaker
+opposition can cushion the penalty, but close/noisy wins cannot. A damaging
+loss in the first elite test after a weaker streak is marked as
+`elite_exposure_loss`.
+
+`elite_resume_adjustment`
+: Calculates career-level elite value from peak rating, elite wins,
+championship-level wins, title-lineage wins, and years spent around elite
+opposition. The adjustment is dampened by recent losses, negative rating trend,
+inactivity, and non-elite losses. This lets the model value wins over fighters
+like Dustin Poirier or Max Holloway without hand-adding one-off exceptions.
 
 `rank_policy: false`
 : Lets title-context entries provide opponent-quality credit without forcing
@@ -74,6 +84,7 @@ npm run model:rankings
 npm run model:audit
 npm run model:review
 npm run model:backtest
+npm run model:diagnostics
 ```
 
 Current generated outputs:
@@ -83,6 +94,8 @@ Current generated outputs:
 - `data/model/audit.json`
 - `data/model/audit-review.md`
 - `data/model/backtest.json`
+- `data/model/diagnostics.json`
+- `data/model/diagnostics.md`
 
 ## Current Audit Snapshot
 
@@ -92,13 +105,37 @@ After the v0.8 changes:
 - title-context failures: `0`
 - data-quality flags: `0`
 - remaining head-to-head violations: `0`
+- unexplained elite snapshot drift: `0`
+- justified elite snapshot drift: `6`
 - inactive top-ranked flags: `0`
 - low-sample overboost flags: `0`
 - old-opponent over-credit flags: `0`
 
-The remaining nonzero audit bucket is large policy adjustments. That is a
-review bucket, not a correctness failure; it shows where ranking policy is doing
-substantial work beyond the pure model score.
+The justified elite snapshot drift bucket covers fighters whose current
+snapshot slot is high, but whose latest finish losses, recent losses, weak
+schedule, or legacy decay explain why the model moved them down. The remaining
+large policy adjustment bucket is a review bucket, not a correctness failure;
+it shows where ranking policy is doing substantial work beyond the pure model
+score.
+
+## Diagnostics
+
+`model:diagnostics` generates category-level bias checks and local sensitivity
+tests. It compares groups such as low-sample fighters, inactive fighters,
+schedule-penalized fighters, dominant-win fighters, title-context fighters, and
+style-profile proxies against the overall ranked pool. It also perturbs visible
+score components by 10 percent to identify fragile rankings.
+
+The diagnostics report is not proof that the model is unbiased. It is a review
+tool for finding where formula changes or manual ranking policy may be creating
+systematic pressure.
+
+Current diagnostics summary:
+
+- bias flags: `4`
+- fragile fighters with 3+ rank movement: `1`
+- max local sensitivity move: `3`
+- most sensitive component: `rank guard minus_10pct`
 
 ## Current Backtest Snapshot
 
@@ -106,9 +143,9 @@ The first backtest checks fights since `2024-01-01` and asks whether the
 higher-rated pre-fight fighter won.
 
 - fights tested: `1255`
-- correct favorite wins: `732`
-- accuracy: `58.3%`
-- underdog wins: `523`
+- correct favorite wins: `733`
+- accuracy: `58.4%`
+- underdog wins: `522`
 
 This is not a final predictive model yet, but it gives the project a real
 validation metric to improve against.

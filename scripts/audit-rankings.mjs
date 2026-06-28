@@ -47,6 +47,8 @@ function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, div
     champion: [],
     title_context: [],
     recent_head_to_head: [],
+    elite_snapshot_drift: [],
+    justified_elite_snapshot_drift: [],
     inactive_top_ranked: [],
     prospect_overboost: [],
     old_opponent_overcredit: [],
@@ -104,10 +106,30 @@ function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, div
     }
 
     for (const fighter of ranked) {
+      const eliteSnapshotMaxRank = getEliteSnapshotMaxRank(fighter);
+      if (eliteSnapshotMaxRank !== null && fighter.rank > eliteSnapshotMaxRank) {
+        const driftCheck = {
+          division: division.division,
+          fighter: fighter.fighter_name,
+          current_status: fighter.current_status,
+          snapshot_rank: fighter.current_snapshot_rank,
+          actual_rank: fighter.rank,
+          max_expected_rank: eliteSnapshotMaxRank,
+          title_context_status: fighter.title_context_status,
+          rank_guard_status: fighter.rank_guard_status,
+          justification: getEliteSnapshotDriftJustification(fighter),
+        };
+        if (driftCheck.justification) {
+          checks.justified_elite_snapshot_drift.push(driftCheck);
+        } else {
+          checks.elite_snapshot_drift.push(driftCheck);
+        }
+      }
+
       if (
         num(fighter.quality_win_adjustment) >= 20 &&
         num(fighter.best_win?.opponent_age_at_fight) >= 36 &&
-        num(fighter.best_win?.opponent_form_score) < 0
+        hasMaterialDeclineContext(fighter.best_win)
       ) {
         checks.old_opponent_overcredit.push({
           division: division.division,
@@ -210,6 +232,8 @@ function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, div
       champion_failures: checks.champion.filter((check) => !check.pass).length,
       title_context_failures: checks.title_context.filter((check) => !check.pass).length,
       recent_head_to_head_violations: checks.recent_head_to_head.length,
+      elite_snapshot_drift: checks.elite_snapshot_drift.length,
+      justified_elite_snapshot_drift: checks.justified_elite_snapshot_drift.length,
       inactive_top_ranked: checks.inactive_top_ranked.length,
       prospect_overboost: checks.prospect_overboost.length,
       old_opponent_overcredit: checks.old_opponent_overcredit.length,
@@ -227,6 +251,37 @@ function getDefaultTitleContextRank(tag) {
   if (tag === "recent_title_challenger") return 5;
   if (tag === "former_champion") return 6;
   return null;
+}
+
+function getEliteSnapshotMaxRank(fighter) {
+  if (fighter.current_status === "Champion") return 1;
+
+  const snapshotRank = Number(fighter.current_snapshot_rank);
+  if (!Number.isFinite(snapshotRank) || snapshotRank <= 0 || snapshotRank > 5) return null;
+  if (snapshotRank === 1) return 3;
+  if (snapshotRank <= 3) return 7;
+  return 8;
+}
+
+function getEliteSnapshotDriftJustification(fighter) {
+  const losses = (fighter.last_five ?? []).filter((fight) => fight.result === "L").length;
+  const recentLosses = (fighter.last_five ?? [])
+    .slice(0, 3)
+    .filter((fight) => fight.result === "L").length;
+  const latestFight = fighter.last_five?.[0];
+
+  if (latestFight?.result === "L" && isFinish(latestFight.method)) return "latest_finish_loss";
+  if (recentLosses >= 2 && num(fighter.recent_form_adjustment) <= -8) return "recent_losses";
+  if (losses >= 3 && num(fighter.legacy_penalty) >= 20) return "legacy_and_losses";
+  if (num(fighter.schedule_strength_adjustment) <= -15 && latestFight?.result === "L") return "weak_schedule_and_latest_loss";
+  if (num(fighter.legacy_penalty) >= 35 && num(fighter.recent_form_adjustment) <= -8) return "legacy_decay";
+  return "";
+}
+
+function hasMaterialDeclineContext(bestWin) {
+  const formScore = num(bestWin?.opponent_form_score);
+  const contextReasons = bestWin?.opponent_context_reasons ?? [];
+  return formScore <= -8 || contextReasons.some((reason) => String(reason).startsWith("losing_streak"));
 }
 
 function isProspectOverboost(fighter, ranked) {
