@@ -107,10 +107,35 @@ npm run model:backtest
 The backtest writes `data/model/backtest.json` and checks how often the
 higher-rated pre-fight fighter won for fights since January 1, 2024.
 
+Run model diagnostics:
+
+```bash
+npm run model:diagnostics
+```
+
+Diagnostics write `data/model/diagnostics.json` and
+`data/model/diagnostics.md`. They check for fragile rankings, sensitivity to
+score components, and group-level pressure on categories like low-sample
+fighters, inactive fighters, dominant-win fighters, and schedule-penalized
+fighters.
+
+Tune model weights against validation metrics:
+
+```bash
+npm run model:tune
+```
+
+The tuner rebuilds rankings for predefined candidate configurations, then runs
+audit, backtest, and diagnostics for each one. It writes
+`data/model/tuning_report.json` and `data/model/tuning_report.md`; generated
+tuning runs stay under `data/model/tuning_runs/` and are ignored by git.
+
 ## Project Status
 
 This is an early frontend and modeling prototype. The frontend still uses
 hardcoded ranking data, while the v0.8 context and round-dominance ranking model
 is a separate generated pipeline under `scripts/build-rankings-model.mjs`. The
+latest modeling pass adds configurable weight files and automated tuning, but
+the app has not yet been wired to consume generated model output directly. The
 methodology content in the app is not final and is marked as placeholder where
 appropriate.

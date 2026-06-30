@@ -14,6 +14,7 @@ const DEFAULTS = {
   kFactor: 32,
   activeWindowMonths: 36,
   minDivisionFights: 2,
+  modelConfigPath: "",
 };
 
 const HEAD_TO_HEAD_WINDOW_MONTHS = 24;
@@ -29,6 +30,27 @@ const ELITE_OPPONENT_RATING = 1600;
 const CHAMPIONSHIP_OPPONENT_RATING = 1625;
 const ELITE_RESUME_RATING = 1600;
 const CHAMPIONSHIP_RESUME_RATING = 1660;
+
+const DEFAULT_MODEL_CONFIG = {
+  name: "default",
+  weights: {
+    recent_form: 1,
+    recent_outcome: 1,
+    schedule_strength: 1,
+    recent_activity: 1,
+    dominance: 1,
+    round_dominance: 1,
+    finish: 1,
+    title_win: 1,
+    elite_resume: 1,
+    quality_win: 1,
+    inactivity_penalty: 1,
+    legacy_penalty: 1,
+    current_context_prior: 1,
+    rank_guard_strength: 1,
+    opponent_elite_resume: 1,
+  },
+};
 
 const CURRENT_DIVISIONS = [
   "Flyweight",
@@ -75,6 +97,7 @@ async function main() {
     printHelp();
     return;
   }
+  args.modelConfig = await readModelConfig(args.modelConfigPath);
 
   const dataDir = path.resolve(process.cwd(), args.dataDir);
   const outDir = path.resolve(process.cwd(), args.outDir);
@@ -122,6 +145,7 @@ async function main() {
       divisionRatings,
       fighterProfiles,
       titleContextByFighter,
+      modelConfig: args.modelConfig,
       args,
     });
 
@@ -234,6 +258,8 @@ async function main() {
       k_factor: args.kFactor,
       active_window_months: args.activeWindowMonths,
       min_division_fights: args.minDivisionFights,
+      model_config_path: args.modelConfigPath,
+      model_config: args.modelConfig,
       current_divisions: CURRENT_DIVISIONS,
       current_snapshot_path: args.currentSnapshotPath,
       title_context_path: args.titleContextPath,
@@ -303,6 +329,7 @@ function processFight({
   divisionRatings,
   fighterProfiles,
   titleContextByFighter,
+  modelConfig,
   args,
 }) {
   if (fight.method === "Overturned") {
@@ -353,6 +380,7 @@ function processFight({
     opponentCareerStates: getCareerFighterStates(divisionRatings, loserName),
     opponentProfile: fighterProfiles.get(loserId),
     opponentTitleContexts: titleContextByFighter.get(normalizeName(loserName)) ?? [],
+    modelConfig,
     fightDate: fight.event_date,
     opponentPreRating: loserPreRating,
   });
@@ -442,7 +470,7 @@ function processFight({
 }
 
 function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapshot, titleContext, divisionContext, fightImpacts }) {
-  const fighterIndex = buildFighterIndex(divisionRatings, asOfDate);
+  const fighterIndex = buildFighterIndex(divisionRatings, asOfDate, args.modelConfig);
   const careerEliteResumeByFighter = buildCareerEliteResumeByFighter(divisionRatings, asOfDate);
   const snapshotByDivision = new Map((currentSnapshot?.divisions ?? []).map((division) => [division.division, division]));
   const titleContextByDivision = new Map((titleContext?.divisions ?? []).map((division) => [division.division, division]));
@@ -474,6 +502,7 @@ function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapsho
           titleContextDivision: titleContextByDivision.get(divisionName),
           divisionContextByFighter,
           careerEliteResumeByFighter,
+          modelConfig: args.modelConfig,
           fightImpacts,
         })
       : rawCandidates
@@ -501,6 +530,7 @@ function buildCurrentSnapshotRankings({
   titleContextDivision,
   divisionContextByFighter,
   careerEliteResumeByFighter,
+  modelConfig,
   fightImpacts,
 }) {
   const rawByName = new Map(rawCandidates.map((candidate) => [normalizeName(candidate.fighter_name), candidate]));
@@ -544,7 +574,7 @@ function buildCurrentSnapshotRankings({
         args,
       });
 
-    const contextPrior = calculateCurrentContextPrior(entry);
+    const contextPrior = calculateCurrentContextPrior(entry, modelConfig);
     const modelScore = baseCandidate.model_score;
     const finalScore = modelScore + contextPrior;
     return {
@@ -574,7 +604,7 @@ function buildCurrentSnapshotRankings({
   const guardedCandidates = applyTitleGuard(candidates);
   const titleContextCandidates = applyTitleContextPolicy(guardedCandidates, titleContextDivision, asOfDate);
   const gatedCandidates = applyRankedEntryGate(titleContextCandidates);
-  const rankGuardCandidates = applyRankDriftGuard(gatedCandidates);
+  const rankGuardCandidates = applyRankDriftGuard(gatedCandidates, modelConfig);
   const headToHeadCandidates = applyHeadToHeadResolver(rankGuardCandidates, divisionName, fightImpacts, asOfDate);
   const finalPolicyCandidates = applyTitleContextPolicy(headToHeadCandidates, titleContextDivision, asOfDate);
 
@@ -583,9 +613,10 @@ function buildCurrentSnapshotRankings({
     .map((fighter, index) => ({ ...fighter, rank: index + 1 }));
 }
 
-function calculateCurrentContextPrior(entry) {
-  if (entry.currentStatus === "Champion") return 95;
-  return round(clamp(58 - entry.snapshotRank * 3.5, 0, 58), 2);
+function calculateCurrentContextPrior(entry, modelConfig) {
+  const weight = getModelWeights(modelConfig).current_context_prior;
+  const prior = entry.currentStatus === "Champion" ? 95 : clamp(58 - entry.snapshotRank * 3.5, 0, 58);
+  return round(prior * weight, 2);
 }
 
 function applyTitleGuard(candidates) {
@@ -664,11 +695,11 @@ function getDefaultTitleContextRank(tag) {
   return null;
 }
 
-function applyRankDriftGuard(candidates) {
+function applyRankDriftGuard(candidates, modelConfig) {
   const guardedCandidates = candidates
     .map((candidate) => ({
       candidate,
-      guard: getRankGuard(candidate),
+      guard: getRankGuard(candidate, modelConfig),
     }))
     .filter(({ guard }) => guard !== null)
     .sort((a, b) => a.guard.maxRank - b.guard.maxRank);
@@ -697,7 +728,7 @@ function applyRankDriftGuard(candidates) {
   return candidates;
 }
 
-function getRankGuard(candidate) {
+function getRankGuard(candidate, modelConfig) {
   if (candidate.current_status === "Champion") return null;
 
   const snapshotRank = Number(candidate.current_snapshot_rank);
@@ -726,7 +757,7 @@ function getRankGuard(candidate) {
   return {
     maxRank,
     confidence,
-    maxAdjustment: round(18 + confidence * 58, 2),
+    maxAdjustment: round((18 + confidence * 58) * getModelWeights(modelConfig).rank_guard_strength, 2),
   };
 }
 
@@ -1049,10 +1080,12 @@ function calculateCurrentDivisionOverlayAdjustment(candidate) {
 }
 
 function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, args, transferPenalty = 0, careerEliteResume = null }) {
+  const weights = getModelWeights(args.modelConfig);
   const monthsInactive = monthsBetween(new Date(fighter.lastFightDate), asOfDate);
-  const inactivityPenalty = calculateInactivityPenalty(monthsInactive);
+  const inactivityPenalty = round(calculateInactivityPenalty(monthsInactive) * weights.inactivity_penalty, 2);
   const baseRating = fighter.rating - transferPenalty;
   const legacy = calculateLegacyPenalty(fighter, asOfDate, baseRating);
+  const legacyPenalty = round(legacy.penalty * weights.legacy_penalty, 2);
   const eliteResume = careerEliteResume ?? calculateEliteResume(fighter, asOfDate);
   const averageDominance = fighter.dominanceSamples > 0 ? fighter.dominanceTotal / fighter.dominanceSamples : 50;
   const averageRoundDominance =
@@ -1061,6 +1094,7 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     fighter,
     legacy,
     eliteResume,
+    modelConfig: args.modelConfig,
     averageDominance,
     averageRoundDominance,
     monthsInactive,
@@ -1078,7 +1112,7 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     scoreComponents.eliteResumeAdjustment +
     scoreComponents.qualityWinAdjustment -
     inactivityPenalty -
-    legacy.penalty;
+    legacyPenalty;
   const eligible =
     fighter.fights >= args.minDivisionFights && monthsInactive <= args.activeWindowMonths && fighter.lastFightDate;
 
@@ -1135,7 +1169,7 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     transfer_source_division: "",
     transfer_source_model_score: "",
     inactivity_penalty: round(inactivityPenalty, 2),
-    legacy_penalty: legacy.penalty,
+    legacy_penalty: legacyPenalty,
     legacy_reasons: legacy.reasons,
     recent_record_30m: legacy.recentRecord,
     recent_fights_30m: legacy.recentFightCount,
@@ -1248,13 +1282,14 @@ function makeSyntheticCandidate({ name, divisionName, args }) {
   };
 }
 
-function buildFighterIndex(divisionRatings, asOfDate) {
+function buildFighterIndex(divisionRatings, asOfDate, modelConfig) {
+  const weights = getModelWeights(modelConfig);
   const index = new Map();
   for (const [divisionName, fighters] of divisionRatings.entries()) {
     for (const fighter of fighters.values()) {
       const normalizedName = normalizeName(fighter.name);
       const monthsInactive = monthsBetween(new Date(fighter.lastFightDate), asOfDate);
-      const score = fighter.rating - calculateInactivityPenalty(monthsInactive);
+      const score = fighter.rating - calculateInactivityPenalty(monthsInactive) * weights.inactivity_penalty;
       const existing = index.get(normalizedName);
       if (!existing || score > existing.score) {
         index.set(normalizedName, {
@@ -1627,6 +1662,7 @@ function calculateOpponentContext({
   opponentCareerStates = [opponent],
   opponentProfile,
   opponentTitleContexts,
+  modelConfig,
   fightDate,
   opponentPreRating,
 }) {
@@ -1701,6 +1737,7 @@ function calculateOpponentContext({
   const eliteResume = calculateCareerEliteResume(opponentCareerStates, fightDateValue);
   const eliteResumeBonus = calculateOpponentEliteResumeBonus({
     eliteResume,
+    modelConfig,
     opponentPreRating,
     ageAtFight,
     recentWins,
@@ -1955,6 +1992,7 @@ function calculateEliteResumeAdjustment(eliteResume, legacy, monthsInactive) {
 
 function calculateOpponentEliteResumeBonus({
   eliteResume,
+  modelConfig,
   opponentPreRating,
   ageAtFight,
   recentWins,
@@ -1976,10 +2014,8 @@ function calculateOpponentEliteResumeBonus({
 
   const rawBonus = clamp(eliteResume.score * 0.2, 0, 16);
   const bonus = rawBonus * clamp(factor, 0.25, 1);
-  if (eliteResume.score >= 55 && opponentPreRating >= 1580) {
-    return round(Math.max(bonus, 10), 2);
-  }
-  return round(clamp(bonus, 0, 16), 2);
+  const boundedBonus = eliteResume.score >= 55 && opponentPreRating >= 1580 ? Math.max(bonus, 10) : clamp(bonus, 0, 16);
+  return round(boundedBonus * getModelWeights(modelConfig).opponent_elite_resume, 2);
 }
 
 function calculateInactivityPenalty(monthsInactive) {
@@ -2041,29 +2077,31 @@ function calculateLegacyPenalty(fighter, asOfDate, baseRating) {
   };
 }
 
-function calculateScoreComponents({ fighter, legacy, eliteResume, averageDominance, averageRoundDominance, monthsInactive }) {
+function calculateScoreComponents({ fighter, legacy, eliteResume, modelConfig, averageDominance, averageRoundDominance, monthsInactive }) {
+  const weights = getModelWeights(modelConfig);
   const recentRecordAdjustment = clamp((legacy.recentWins - legacy.recentLosses) * 8, -24, 24);
   const recentTrendAdjustment = clamp(legacy.recentRatingChange * 0.25, -20, 20);
-  const recentFormAdjustment = round(recentRecordAdjustment + recentTrendAdjustment, 2);
-  const recentOutcomeAdjustment = calculateRecentOutcomeAdjustment(fighter.lastFive, monthsInactive);
+  const rawRecentFormAdjustment = round(recentRecordAdjustment + recentTrendAdjustment, 2);
+  const recentFormAdjustment = round(rawRecentFormAdjustment * weights.recent_form, 2);
+  const recentOutcomeAdjustment = round(calculateRecentOutcomeAdjustment(fighter.lastFive, monthsInactive) * weights.recent_outcome, 2);
   const scheduleStrength = calculateScheduleStrength({
     fights: fighter.lastFive,
-    recentFormAdjustment,
+    recentFormAdjustment: rawRecentFormAdjustment,
     totalFights: fighter.fights,
   });
-  const recentActivityAdjustment = round(clamp(legacy.recentFightCount * 4, 0, 16), 2);
-  const dominanceAdjustment = round(clamp((averageDominance - 50) * 0.45, -18, 18), 2);
-  const roundDominanceAdjustment = round(clamp((averageRoundDominance - 50) * 0.25, -10, 10), 2);
+  const recentActivityAdjustment = round(clamp(legacy.recentFightCount * 4, 0, 16) * weights.recent_activity, 2);
+  const dominanceAdjustment = round(clamp((averageDominance - 50) * 0.45, -18, 18) * weights.dominance, 2);
+  const roundDominanceAdjustment = round(clamp((averageRoundDominance - 50) * 0.25, -10, 10) * weights.round_dominance, 2);
   const finishRate = fighter.fights > 0 ? fighter.finishes / fighter.fights : 0;
-  const finishAdjustment = round(clamp((finishRate - 0.35) * 24, -8, 14), 2);
-  const titleWinAdjustment = calculateTitleWinAdjustment(fighter.lastFive);
-  const eliteResumeAdjustment = calculateEliteResumeAdjustment(eliteResume, legacy, monthsInactive);
-  const qualityWinAdjustment = calculateQualityWinAdjustment(fighter.bestWin, legacy.bestWinAgeMonths);
+  const finishAdjustment = round(clamp((finishRate - 0.35) * 24, -8, 14) * weights.finish, 2);
+  const titleWinAdjustment = round(calculateTitleWinAdjustment(fighter.lastFive) * weights.title_win, 2);
+  const eliteResumeAdjustment = round(calculateEliteResumeAdjustment(eliteResume, legacy, monthsInactive) * weights.elite_resume, 2);
+  const qualityWinAdjustment = round(calculateQualityWinAdjustment(fighter.bestWin, legacy.bestWinAgeMonths) * weights.quality_win, 2);
 
   return {
     recentFormAdjustment,
     recentOutcomeAdjustment,
-    scheduleStrengthAdjustment: scheduleStrength.adjustment,
+    scheduleStrengthAdjustment: round(scheduleStrength.adjustment * weights.schedule_strength, 2),
     scheduleStrengthScore: scheduleStrength.score,
     scheduleStrengthStatus: scheduleStrength.status,
     avgWinOpponentRatingLast5: scheduleStrength.avgWinOpponentRatingLast5,
@@ -2351,6 +2389,37 @@ async function readOptionalJson(filePath, fallback = null) {
   }
 }
 
+async function readModelConfig(filePath) {
+  if (!filePath) return structuredClone(DEFAULT_MODEL_CONFIG);
+
+  const userConfig = await readJson(path.resolve(process.cwd(), filePath));
+  return mergeModelConfig(userConfig);
+}
+
+function mergeModelConfig(userConfig) {
+  const config = {
+    ...structuredClone(DEFAULT_MODEL_CONFIG),
+    ...userConfig,
+    weights: {
+      ...DEFAULT_MODEL_CONFIG.weights,
+      ...(userConfig?.weights ?? {}),
+    },
+  };
+
+  for (const [key, value] of Object.entries(config.weights)) {
+    if (!Number.isFinite(Number(value)) || Number(value) < 0) {
+      throw new Error(`Invalid model weight ${key}: expected a non-negative number.`);
+    }
+    config.weights[key] = Number(value);
+  }
+
+  return config;
+}
+
+function getModelWeights(modelConfig = DEFAULT_MODEL_CONFIG) {
+  return modelConfig.weights ?? DEFAULT_MODEL_CONFIG.weights;
+}
+
 async function writeJson(filePath, data) {
   await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`);
 }
@@ -2566,6 +2635,8 @@ function parseArgs(argv) {
       args.activeWindowMonths = Number(arg.slice("--active-window-months=".length));
     } else if (arg.startsWith("--min-division-fights=")) {
       args.minDivisionFights = Number(arg.slice("--min-division-fights=".length));
+    } else if (arg.startsWith("--model-config=")) {
+      args.modelConfigPath = arg.slice("--model-config=".length);
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -2591,6 +2662,7 @@ Options:
   --k-factor=NUMBER              Elo update size.
   --active-window-months=NUMBER  Eligibility window since last fight.
   --min-division-fights=NUMBER   Minimum UFC fights in a division to rank.
+  --model-config=PATH            Optional JSON file with model weight overrides.
 `);
 }
 

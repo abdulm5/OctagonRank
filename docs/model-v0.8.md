@@ -10,6 +10,8 @@ implemented upgrades:
 - latest-result adjustment for recent losses,
 - schedule-strength adjustment for inflated win streaks,
 - automatic elite-resume scoring for long-term elite fighters,
+- configurable model weights for validation runs,
+- an automated tuning pass across predefined model candidates,
 - a first predictive backtest using pre-fight model ratings.
 
 ## Current Inputs
@@ -77,6 +79,19 @@ like Dustin Poirier or Max Holloway without hand-adding one-off exceptions.
 : Lets title-context entries provide opponent-quality credit without forcing
 rank protection. This is useful for older former champions.
 
+`model_config`
+: Allows a tuning run to scale individual score components without rewriting
+the model. The default configuration keeps every weight at `1`, so normal
+rankings match the hand-tuned baseline unless `--model-config` is provided.
+
+`model_tuning`
+: Runs predefined candidate configs, rebuilds rankings for each one, audits the
+result, backtests it, and runs diagnostics. Candidates are scored by rewarding
+backtest accuracy while heavily penalizing champion/title/head-to-head/data
+quality failures and lightly penalizing fragile or high-policy rankings. The
+tuning report is a decision aid; it does not automatically replace the default
+model.
+
 ## Commands
 
 ```bash
@@ -85,6 +100,7 @@ npm run model:audit
 npm run model:review
 npm run model:backtest
 npm run model:diagnostics
+npm run model:tune
 ```
 
 Current generated outputs:
@@ -96,6 +112,27 @@ Current generated outputs:
 - `data/model/backtest.json`
 - `data/model/diagnostics.json`
 - `data/model/diagnostics.md`
+- `data/model/tuning_report.json`
+- `data/model/tuning_report.md`
+
+Example custom weight file:
+
+```json
+{
+  "name": "more_recent_form",
+  "weights": {
+    "recent_form": 1.1,
+    "recent_outcome": 1.05,
+    "rank_guard_strength": 0.9
+  }
+}
+```
+
+Run it directly:
+
+```bash
+node scripts/build-rankings-model.mjs --model-config=path/to/model_config.json
+```
 
 ## Current Audit Snapshot
 
@@ -149,3 +186,18 @@ higher-rated pre-fight fighter won.
 
 This is not a final predictive model yet, but it gives the project a real
 validation metric to improve against.
+
+## Current Tuning Snapshot
+
+The latest full tuning sweep tested `14` predefined candidates.
+
+- best candidate: `less_schedule_strength`
+- score: `549.90`
+- backtest accuracy: `58.4%`
+- hard audit failures: `0`
+- soft audit flags: `0`
+- fragile fighters: `0`
+
+The default model remains the baseline. The tuning result suggests the next
+serious experiment should slightly reduce schedule-strength pressure, then
+compare the affected divisions manually before promoting it to the default.
