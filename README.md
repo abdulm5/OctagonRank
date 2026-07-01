@@ -98,6 +98,17 @@ The review writes `data/model/audit-review.md`. It summarizes the audit,
 prints each division's top 15 with score explanations, and lists the exact
 fighters that need the next tuning pass.
 
+Generate fighter-level ranking explanations:
+
+```bash
+npm run model:explain
+```
+
+The explanation report writes `data/model/explanations.json` and
+`data/model/explanations.md`. It breaks each fighter into model score, policy
+movement, top positive drivers, top penalties, best win, recent form, and
+automatic review flags for rankings that need manual inspection.
+
 Run the first predictive backtest:
 
 ```bash

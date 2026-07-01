@@ -10,6 +10,7 @@ implemented upgrades:
 - latest-result adjustment for recent losses,
 - schedule-strength adjustment for inflated win streaks,
 - automatic elite-resume scoring for long-term elite fighters,
+- fighter-level explanation reports with review flags,
 - configurable model weights for validation runs,
 - an automated tuning pass across predefined model candidates,
 - a first predictive backtest using pre-fight model ratings.
@@ -92,6 +93,13 @@ quality failures and lightly penalizing fragile or high-policy rankings. The
 tuning report is a decision aid; it does not automatically replace the default
 model.
 
+`model_explanations`
+: Generates fighter-level explanation JSON and Markdown from the latest
+rankings. Each fighter gets a model-only rank, final score, policy movement,
+top boosts, top drags, best win, recent form, and automatic review flags. This
+is meant to catch surprising cases like a top-five rank built mostly from
+recent form instead of title or elite-resume support.
+
 ## Commands
 
 ```bash
@@ -101,6 +109,7 @@ npm run model:review
 npm run model:backtest
 npm run model:diagnostics
 npm run model:tune
+npm run model:explain
 ```
 
 Current generated outputs:
@@ -114,6 +123,8 @@ Current generated outputs:
 - `data/model/diagnostics.md`
 - `data/model/tuning_report.json`
 - `data/model/tuning_report.md`
+- `data/model/explanations.json`
+- `data/model/explanations.md`
 
 Example custom weight file:
 

@@ -13,7 +13,8 @@
     "model:review": "node scripts/review-audit.mjs",
     "model:backtest": "node scripts/backtest-model.mjs",
     "model:diagnostics": "node scripts/diagnose-model.mjs",
-    "model:tune": "node scripts/tune-model.mjs"
+    "model:tune": "node scripts/tune-model.mjs",
+    "model:explain": "node scripts/explain-rankings.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
