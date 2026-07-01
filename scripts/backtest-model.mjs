@@ -50,12 +50,24 @@ function buildBacktest({ fightImpacts, rankings, since }) {
     .filter((impact) => Number.isFinite(num(impact.winner_pre_rating)) && Number.isFinite(num(impact.loser_pre_rating)))
     .map((impact) => {
       const ratingGap = round(num(impact.winner_pre_rating) - num(impact.loser_pre_rating), 2);
-      const predictedWinnerWon = ratingGap >= 0;
+      const expectedWinner = clamp(num(impact.expected_winner), 0.001, 0.999);
+      const predictedWinnerWon = expectedWinner >= 0.5;
+      const favoriteProbability = round(Math.max(expectedWinner, 1 - expectedWinner), 4);
+      const favoriteName = predictedWinnerWon ? impact.winner_name : impact.loser_name;
+      const underdogName = predictedWinnerWon ? impact.loser_name : impact.winner_name;
       return {
         ...impact,
         rating_gap: ratingGap,
+        expected_winner_probability: expectedWinner,
+        favorite_probability: favoriteProbability,
+        favorite_name: favoriteName,
+        underdog_name: underdogName,
         predicted_winner_won: predictedWinnerWon,
         upset: !predictedWinnerWon,
+        brier_score: round((1 - expectedWinner) ** 2, 4),
+        log_loss: round(-Math.log(expectedWinner), 4),
+        favorite_confidence_bucket: favoriteConfidenceBucket(favoriteProbability),
+        method_bucket: methodBucket(impact.method),
       };
     });
 
@@ -73,6 +85,9 @@ function buildBacktest({ fightImpacts, rankings, since }) {
   const byYear = groupBy(eligible, (impact) => impact.event_date.slice(0, 4));
   const years = Object.fromEntries([...byYear.entries()].map(([year, rows]) => [year, summarize(rows)]));
   const ratingGapBuckets = buildRatingGapBuckets(eligible);
+  const confidenceBuckets = buildFavoriteConfidenceBuckets(eligible);
+  const fightContextBuckets = buildFightContextBuckets(eligible);
+  const methodBuckets = buildMethodBuckets(eligible);
 
   const upsets = eligible
     .filter((impact) => impact.upset)
@@ -87,6 +102,9 @@ function buildBacktest({ fightImpacts, rankings, since }) {
       winner_pre_rating: impact.winner_pre_rating,
       loser_pre_rating: impact.loser_pre_rating,
       rating_gap: impact.rating_gap,
+      favorite_probability: impact.favorite_probability,
+      brier_score: impact.brier_score,
+      log_loss: impact.log_loss,
     }));
 
   return {
@@ -99,6 +117,9 @@ function buildBacktest({ fightImpacts, rankings, since }) {
     division_rankings,
     years,
     rating_gap_buckets: ratingGapBuckets,
+    favorite_confidence_buckets: confidenceBuckets,
+    fight_context_buckets: fightContextBuckets,
+    method_buckets: methodBuckets,
     largest_rating_upsets: upsets,
   };
 }
@@ -108,6 +129,10 @@ function summarize(rows) {
   const correct = rows.filter((row) => row.predicted_winner_won).length;
   const accuracy = total > 0 ? correct / total : 0;
   const averageWinnerGap = total > 0 ? rows.reduce((sum, row) => sum + row.rating_gap, 0) / total : 0;
+  const averageFavoriteProbability = average(rows, (row) => row.favorite_probability);
+  const brierScore = average(rows, (row) => row.brier_score);
+  const logLoss = average(rows, (row) => row.log_loss);
+  const calibrationError = total > 0 ? Math.abs(accuracy - averageFavoriteProbability) : 0;
   const favorites = rows.filter((row) => row.rating_gap >= 0);
   const underdogs = rows.filter((row) => row.rating_gap < 0);
 
@@ -115,6 +140,12 @@ function summarize(rows) {
     fights: total,
     correct,
     accuracy: round(accuracy, 4),
+    expected_correct: round(total * averageFavoriteProbability, 2),
+    average_favorite_probability: round(averageFavoriteProbability, 4),
+    calibration_error: round(calibrationError, 4),
+    brier_score: round(brierScore, 4),
+    log_loss: round(logLoss, 4),
+    validation_score: validationScore({ accuracy, brierScore, logLoss, calibrationError }),
     average_winner_rating_gap: round(averageWinnerGap, 2),
     favorite_wins: favorites.length,
     underdog_wins: underdogs.length,
@@ -145,6 +176,81 @@ function buildRatingGapBuckets(rows) {
   });
 }
 
+function buildFavoriteConfidenceBuckets(rows) {
+  const buckets = [
+    { key: "coinflip_50_55", label: "50-55%", min: 0.5, max: 0.55 },
+    { key: "lean_55_60", label: "55-60%", min: 0.55, max: 0.6 },
+    { key: "solid_60_65", label: "60-65%", min: 0.6, max: 0.65 },
+    { key: "strong_65_70", label: "65-70%", min: 0.65, max: 0.7 },
+    { key: "heavy_70_plus", label: "70%+", min: 0.7, max: Infinity },
+  ];
+
+  return buckets.map((bucket) => {
+    const bucketRows = rows.filter((row) => row.favorite_probability >= bucket.min && row.favorite_probability < bucket.max);
+    return {
+      bucket: bucket.key,
+      label: bucket.label,
+      min_favorite_probability: bucket.min,
+      max_favorite_probability: Number.isFinite(bucket.max) ? bucket.max : null,
+      ...summarize(bucketRows),
+    };
+  });
+}
+
+function buildFightContextBuckets(rows) {
+  const buckets = [
+    {
+      key: "ranked_rating_proxy",
+      label: "Ranked proxy (max pre-rating 1600+)",
+      test: (row) => Math.max(num(row.winner_pre_rating), num(row.loser_pre_rating)) >= 1600,
+    },
+    {
+      key: "elite_rating_proxy",
+      label: "Elite proxy (max pre-rating 1650+)",
+      test: (row) => Math.max(num(row.winner_pre_rating), num(row.loser_pre_rating)) >= 1650,
+    },
+    {
+      key: "title_context_win_sample",
+      label: "Winner beat title-context opponent",
+      test: (row) => String(row.opponent_context_reason ?? "").includes("title_context"),
+    },
+    {
+      key: "thin_or_debut_level",
+      label: "Thin/debut-level rating sample",
+      test: (row) => Math.max(num(row.winner_pre_rating), num(row.loser_pre_rating)) < 1525,
+    },
+    {
+      key: "dominant_winner_profile",
+      label: "Dominant winner profile",
+      test: (row) => num(row.dominance_score) >= 65 || num(row.round_dominance_score) >= 65,
+    },
+    {
+      key: "low_repeatability_profile",
+      label: "Low-repeatability/comeback profile",
+      test: (row) => Boolean(row.repeatability_reason) || num(row.dominance_score) < 45,
+    },
+  ];
+
+  return buckets.map((bucket) => {
+    const bucketRows = rows.filter(bucket.test);
+    return {
+      bucket: bucket.key,
+      label: bucket.label,
+      ...summarize(bucketRows),
+    };
+  });
+}
+
+function buildMethodBuckets(rows) {
+  const byMethod = groupBy(rows, (row) => row.method_bucket);
+  return [...byMethod.entries()]
+    .map(([method, methodRows]) => ({
+      method,
+      ...summarize(methodRows),
+    }))
+    .sort((a, b) => b.fights - a.fights);
+}
+
 function reliabilityLabel(rows) {
   if (rows.length >= 100) return "high sample";
   if (rows.length >= 40) return "medium sample";
@@ -166,10 +272,40 @@ function buildMarkdownReport(report) {
     bucket.label,
     bucket.fights,
     pct(bucket.accuracy),
+    pct(bucket.average_favorite_probability),
+    pct(bucket.calibration_error),
+    fmt(bucket.brier_score),
+    fmt(bucket.log_loss),
     bucket.correct,
     bucket.underdog_wins,
-    pct(bucket.underdog_win_rate),
-    fmt(bucket.average_winner_rating_gap),
+  ]);
+  const confidenceRows = report.favorite_confidence_buckets.map((bucket) => [
+    bucket.label,
+    bucket.fights,
+    pct(bucket.accuracy),
+    pct(bucket.average_favorite_probability),
+    pct(bucket.calibration_error),
+    fmt(bucket.brier_score),
+    fmt(bucket.log_loss),
+    fmt(bucket.validation_score),
+  ]);
+  const contextRows = report.fight_context_buckets.map((bucket) => [
+    bucket.label,
+    bucket.fights,
+    pct(bucket.accuracy),
+    pct(bucket.average_favorite_probability),
+    pct(bucket.calibration_error),
+    fmt(bucket.brier_score),
+    fmt(bucket.log_loss),
+  ]);
+  const methodRows = report.method_buckets.map((bucket) => [
+    bucket.method,
+    bucket.fights,
+    pct(bucket.accuracy),
+    pct(bucket.average_favorite_probability),
+    pct(bucket.calibration_error),
+    fmt(bucket.brier_score),
+    fmt(bucket.log_loss),
   ]);
   const yearRows = Object.entries(report.years).map(([year, row]) => [
     year,
@@ -200,6 +336,11 @@ function buildMarkdownReport(report) {
     "",
     `- fights: \`${report.summary.fights}\``,
     `- accuracy: \`${pct(report.summary.accuracy)}\``,
+    `- validation score: \`${fmt(report.summary.validation_score)}\``,
+    `- avg favorite probability: \`${pct(report.summary.average_favorite_probability)}\``,
+    `- calibration error: \`${pct(report.summary.calibration_error)}\``,
+    `- Brier score: \`${fmt(report.summary.brier_score)}\``,
+    `- log loss: \`${fmt(report.summary.log_loss)}\``,
     `- underdog wins: \`${report.summary.underdog_wins}\``,
     `- average winner rating gap: \`${fmt(report.summary.average_winner_rating_gap)}\``,
     "",
@@ -212,9 +353,30 @@ function buildMarkdownReport(report) {
     "",
     markdownTable(
       "## Rating-Gap Buckets",
-      ["Bucket", "Fights", "Accuracy", "Correct", "Underdog Wins", "Underdog Rate", "Avg Winner Gap"],
+      ["Bucket", "Fights", "Accuracy", "Avg Fav Prob", "Calibration Error", "Brier", "Log Loss", "Correct", "Upsets"],
       bucketRows,
       "No rating-gap buckets.",
+    ),
+    "",
+    markdownTable(
+      "## Favorite Confidence Calibration",
+      ["Favorite Prob", "Fights", "Accuracy", "Avg Fav Prob", "Calibration Error", "Brier", "Log Loss", "Validation Score"],
+      confidenceRows,
+      "No favorite confidence buckets.",
+    ),
+    "",
+    markdownTable(
+      "## Fight Context Validation",
+      ["Context", "Fights", "Accuracy", "Avg Fav Prob", "Calibration Error", "Brier", "Log Loss"],
+      contextRows,
+      "No fight context buckets.",
+    ),
+    "",
+    markdownTable(
+      "## Method Validation",
+      ["Method", "Fights", "Accuracy", "Avg Fav Prob", "Calibration Error", "Brier", "Log Loss"],
+      methodRows,
+      "No method buckets.",
     ),
     "",
     markdownTable(
@@ -242,6 +404,31 @@ function groupBy(rows, keyFn) {
     grouped.get(key).push(row);
   }
   return grouped;
+}
+
+function validationScore({ accuracy, brierScore, logLoss, calibrationError }) {
+  return round(accuracy * 1000 - brierScore * 250 - logLoss * 40 - calibrationError * 100, 2);
+}
+
+function favoriteConfidenceBucket(probability) {
+  if (probability < 0.55) return "50-55%";
+  if (probability < 0.6) return "55-60%";
+  if (probability < 0.65) return "60-65%";
+  if (probability < 0.7) return "65-70%";
+  return "70%+";
+}
+
+function methodBucket(method) {
+  const value = String(method ?? "").toLowerCase();
+  if (value.includes("decision")) return "Decision";
+  if (value.includes("ko") || value.includes("tko") || value.includes("doctor")) return "KO/TKO";
+  if (value.includes("submission")) return "Submission";
+  return "Other";
+}
+
+function average(rows, valueFn) {
+  if (!rows.length) return 0;
+  return rows.reduce((sum, row) => sum + num(valueFn(row)), 0) / rows.length;
 }
 
 async function readJson(filePath) {
@@ -300,6 +487,9 @@ function printSummary(report, args) {
   console.log(`Wrote backtest review to ${args.markdownOutPath}`);
   console.log(`fights: ${report.summary.fights}`);
   console.log(`accuracy: ${(report.summary.accuracy * 100).toFixed(1)}%`);
+  console.log(`validation score: ${report.summary.validation_score.toFixed(2)}`);
+  console.log(`brier score: ${report.summary.brier_score.toFixed(4)}`);
+  console.log(`log loss: ${report.summary.log_loss.toFixed(4)}`);
   console.log(`underdog wins: ${report.summary.underdog_wins}`);
 }
 
@@ -335,6 +525,10 @@ function num(value) {
   if (value === null || value === undefined || value === "") return 0;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function round(value, places = 2) {

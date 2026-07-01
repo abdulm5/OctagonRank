@@ -9,7 +9,7 @@ const DEFAULTS = {
   markdownOutPath: "data/model/model_comparison.md",
   runRoot: "data/model/comparison_runs",
   baseline: "baseline",
-  candidate: "more_recent_form",
+  candidate: "less_schedule_strength",
   since: "2024-01-01",
   rankLimit: 15,
   assertionsPath: "data/ranking_inputs/model_assertions.json",
@@ -193,9 +193,17 @@ function summarizeRun({ audit, backtest, diagnostics, assertions, scoreBands }) 
   const auditSummary = audit.summary ?? {};
   const diagnosticsSummary = diagnostics.summary ?? {};
   const scoreBandSummary = scoreBands.summary ?? {};
+  const contextBuckets = new Map((backtest.fight_context_buckets ?? []).map((bucket) => [bucket.bucket, bucket]));
   return {
+    backtest_validation_score: num(backtest.summary?.validation_score),
     backtest_accuracy: num(backtest.summary?.accuracy),
+    backtest_brier_score: num(backtest.summary?.brier_score),
+    backtest_log_loss: num(backtest.summary?.log_loss),
+    backtest_calibration_error: num(backtest.summary?.calibration_error),
     backtest_fights: num(backtest.summary?.fights),
+    ranked_proxy_accuracy: num(contextBuckets.get("ranked_rating_proxy")?.accuracy),
+    elite_proxy_accuracy: num(contextBuckets.get("elite_rating_proxy")?.accuracy),
+    title_context_accuracy: num(contextBuckets.get("title_context_win_sample")?.accuracy),
     hard_audit_failures:
       num(auditSummary.champion_failures) +
       num(auditSummary.title_context_failures) +
@@ -334,6 +342,7 @@ function buildRiskFlags({ candidate, rankMoves, metricComparison }) {
 function buildRecommendation({ metricComparison, riskFlags, candidate }) {
   const highRisk = riskFlags.some((flag) => flag.severity === "high");
   const accuracyDelta = metricComparison.backtest_accuracy?.delta ?? 0;
+  const validationDelta = metricComparison.backtest_validation_score?.delta ?? 0;
   const hardDelta = metricComparison.hard_audit_failures?.delta ?? 0;
   const assertionDelta = metricComparison.assertion_failures?.delta ?? 0;
 
@@ -343,16 +352,16 @@ function buildRecommendation({ metricComparison, riskFlags, candidate }) {
       detail: "Candidate creates a high-risk validation or assertion regression.",
     };
   }
-  if (accuracyDelta > 0 && candidate.metrics.assertion_failures === 0) {
+  if ((accuracyDelta > 0 || validationDelta > 1) && candidate.metrics.assertion_failures === 0) {
     return {
       status: "candidate_can_be_promoted_after_review",
-      detail: "Candidate improves accuracy with no assertion failures; review rank movement before making it default.",
+      detail: "Candidate improves validation with no assertion failures; review rank movement before making it default.",
     };
   }
-  if (accuracyDelta === 0 && candidate.metrics.assertion_failures === 0) {
+  if (accuracyDelta === 0 && validationDelta >= 0 && candidate.metrics.assertion_failures === 0) {
     return {
       status: "candidate_is_safe_but_not_clearly_better",
-      detail: "Candidate preserves constraints, but predictive accuracy is unchanged. Promote only if rank movement is more plausible.",
+      detail: "Candidate preserves constraints, but predictive validation is not clearly better. Promote only if rank movement is more plausible.",
     };
   }
   return {
@@ -539,6 +548,7 @@ function printSummary(report, args) {
   console.log(`Wrote model comparison to ${args.outPath}`);
   console.log(`Wrote model comparison review to ${args.markdownOutPath}`);
   console.log(`recommendation: ${report.recommendation.status}`);
+  console.log(`validation delta: ${formatMetric("backtest_validation_score", report.metrics.backtest_validation_score.delta, true)}`);
   console.log(`accuracy delta: ${formatMetric("backtest_accuracy", report.metrics.backtest_accuracy.delta, true)}`);
   console.log(`assertion failures: ${report.candidate.metrics.assertion_failures}`);
   console.log(`risk flags: ${report.risk_flags.length}`);
@@ -607,6 +617,10 @@ function escapeMarkdownCell(value) {
 
 function formatMetric(metric, value, forceSigned = false) {
   if (metric === "backtest_accuracy") {
+    const formatted = `${(num(value) * 100).toFixed(2)}%`;
+    return forceSigned && num(value) > 0 ? `+${formatted}` : formatted;
+  }
+  if (metric.endsWith("_accuracy") || metric === "backtest_calibration_error") {
     const formatted = `${(num(value) * 100).toFixed(2)}%`;
     return forceSigned && num(value) > 0 ? `+${formatted}` : formatted;
   }

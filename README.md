@@ -131,8 +131,9 @@ npm run model:backtest
 
 The backtest writes `data/model/backtest.json` and `data/model/backtest.md`.
 It checks how often the higher-rated pre-fight fighter won for fights since
-January 1, 2024, then breaks validation down by division, year, and rating-gap
-bucket.
+January 1, 2024, then reports accuracy, Brier score, log loss, calibration
+error, favorite-confidence buckets, division slices, year slices, method
+validation, and ranked/title-context proxy performance.
 
 Generate historical ranking movement:
 
@@ -186,7 +187,7 @@ Compare a baseline model against a tuning candidate:
 npm run model:compare
 ```
 
-The comparison report defaults to `baseline` versus `more_recent_form`. It
+The comparison report defaults to `baseline` versus `less_schedule_strength`. It
 rebuilds both runs, then writes `data/model/model_comparison.json` and
 `data/model/model_comparison.md` with validation deltas, assertion regressions,
 risk flags, biggest rank movers, new ranked fighters, removed ranked fighters,

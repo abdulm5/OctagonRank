@@ -68,7 +68,7 @@ async function main() {
     scoring: {
       higher_is_better: true,
       formula:
-        "accuracy*1000 - hard_failures*500 - assertion_failures*350 - soft_audit_flags*25 - diagnostics_fragile*10 - diagnostics_bias*5 - max_rank_move*2 - large_policy_adjustments*0.2",
+        "validation_score - hard_failures*500 - assertion_failures*350 - soft_audit_flags*25 - diagnostics_fragile*10 - diagnostics_bias*5 - max_rank_move*2 - large_policy_adjustments*0.2",
     },
     best_candidate: rankedResults[0],
     candidates: rankedResults,
@@ -156,6 +156,10 @@ async function runCandidate({ candidate, runRoot, since, assertionsInputPath }) 
     score_breakdown: scoreBreakdown,
     model_version: rankings.model_version,
     backtest_accuracy: backtest.summary.accuracy,
+    backtest_validation_score: backtest.summary.validation_score,
+    backtest_brier_score: backtest.summary.brier_score,
+    backtest_log_loss: backtest.summary.log_loss,
+    backtest_calibration_error: backtest.summary.calibration_error,
     backtest_correct: backtest.summary.correct,
     backtest_fights: backtest.summary.fights,
     audit_summary: audit.summary,
@@ -184,7 +188,9 @@ function scoreCandidate({ audit, backtest, diagnostics, assertions }) {
     num(auditSummary.prospect_overboost) +
     num(auditSummary.old_opponent_overcredit);
   const largePolicyAdjustments = num(auditSummary.large_policy_adjustments);
-  const accuracyPoints = num(backtest.summary?.accuracy) * 1000;
+  const validationPoints = Number.isFinite(Number(backtest.summary?.validation_score))
+    ? num(backtest.summary.validation_score)
+    : num(backtest.summary?.accuracy) * 1000;
   const hardFailurePenalty = hardFailures * 500;
   const softAuditPenalty = softAuditFlags * 25;
   const fragilePenalty = num(diagnosticsSummary.fragile_fighters) * 10;
@@ -195,7 +201,7 @@ function scoreCandidate({ audit, backtest, diagnostics, assertions }) {
 
   return {
     score: round(
-      accuracyPoints -
+      validationPoints -
         hardFailurePenalty -
         assertionFailurePenalty -
         softAuditPenalty -
@@ -205,7 +211,11 @@ function scoreCandidate({ audit, backtest, diagnostics, assertions }) {
         policyPenalty,
       2,
     ),
-    accuracy_points: round(accuracyPoints, 2),
+    validation_points: round(validationPoints, 2),
+    accuracy_points: round(num(backtest.summary?.accuracy) * 1000, 2),
+    brier_score: num(backtest.summary?.brier_score),
+    log_loss: num(backtest.summary?.log_loss),
+    calibration_error: num(backtest.summary?.calibration_error),
     hard_failures: hardFailures,
     hard_failure_penalty: hardFailurePenalty,
     assertion_failures: num(assertions.failed),
@@ -233,6 +243,9 @@ function buildMarkdown(report) {
     candidate.name,
     fmt(candidate.score),
     `${(candidate.backtest_accuracy * 100).toFixed(1)}%`,
+    fmt(candidate.backtest_validation_score),
+    fmt(candidate.backtest_brier_score),
+    fmt(candidate.backtest_calibration_error),
     String(candidate.score_breakdown.hard_failures),
     String(candidate.score_breakdown.assertion_failures),
     String(candidate.score_breakdown.soft_audit_flags),
@@ -255,7 +268,7 @@ function buildMarkdown(report) {
     "## Candidate Results",
     "",
     markdownTable(
-      ["Rank", "Candidate", "Score", "Accuracy", "Hard Flags", "Constraint Fails", "Soft Flags", "Bias", "Fragile", "Output"],
+      ["Rank", "Candidate", "Score", "Accuracy", "Validation", "Brier", "Calib Err", "Hard Flags", "Constraint Fails", "Soft Flags", "Bias", "Fragile", "Output"],
       rows,
     ),
     "",
@@ -371,6 +384,7 @@ function printSummary(report, args) {
   console.log(`best: ${best.name}`);
   console.log(`score: ${fmt(best.score)}`);
   console.log(`accuracy: ${(best.backtest_accuracy * 100).toFixed(1)}%`);
+  console.log(`validation score: ${fmt(best.backtest_validation_score)}`);
   console.log(`hard failures: ${best.score_breakdown.hard_failures}`);
   console.log(`assertion failures: ${best.score_breakdown.assertion_failures}`);
   console.log(`soft audit flags: ${best.score_breakdown.soft_audit_flags}`);
