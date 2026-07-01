@@ -15,6 +15,8 @@ const DEFAULTS = {
   activeWindowMonths: 36,
   minDivisionFights: 2,
   modelConfigPath: "",
+  asOfDate: "",
+  useCurrentSnapshot: true,
 };
 
 const HEAD_TO_HEAD_WINDOW_MONTHS = 24;
@@ -114,7 +116,7 @@ async function main() {
     readOptionalJson(path.join(dataDir, "fight_round_stats.json"), []),
     readJson(path.join(dataDir, "fighters.json")),
     readAnnotations(path.resolve(process.cwd(), args.annotationsPath)),
-    readCurrentSnapshot(path.resolve(process.cwd(), args.currentSnapshotPath)),
+    args.useCurrentSnapshot ? readCurrentSnapshot(path.resolve(process.cwd(), args.currentSnapshotPath)) : null,
     readTitleContext(path.resolve(process.cwd(), args.titleContextPath)),
     readDivisionContext(path.resolve(process.cwd(), args.divisionContextPath)),
   ]);
@@ -125,7 +127,8 @@ async function main() {
   const fighterProfiles = new Map(fighters.map((fighter) => [fighter.fighter_id, fighter]));
   const titleContextByFighter = buildTitleContextByFighter(titleContext);
   const annotationsByFight = new Map(annotations.map((annotation) => [annotation.fight_id, annotation]));
-  const asOfDate = new Date(summary.end_date ?? latestDate(fights));
+  const sourceEndDate = new Date(summary.end_date ?? latestDate(fights));
+  const asOfDate = args.asOfDate ? parseDateArg(args.asOfDate, "--as-of") : sourceEndDate;
   const adjustedCurrentSnapshot = applyDivisionContextToSnapshot(currentSnapshot, divisionContext, asOfDate);
 
   const divisionRatings = new Map();
@@ -134,6 +137,7 @@ async function main() {
 
   const orderedFights = fights
     .filter((fight) => currentDivisionSet.has(fight.weight_class))
+    .filter((fight) => fight.event_date <= toIsoDate(asOfDate))
     .sort((a, b) => {
       const dateCompare = a.event_date.localeCompare(b.event_date);
       if (dateCompare !== 0) return dateCompare;
@@ -270,6 +274,7 @@ async function main() {
       current_snapshot_divisions: adjustedCurrentSnapshot?.divisions?.length ?? 0,
       title_context_divisions: titleContext?.divisions?.length ?? 0,
       division_context_moves: divisionContext?.division_moves?.length ?? 0,
+      source_data_end_date: toIsoDate(sourceEndDate),
     },
     model_settings: {
       initial_rating: args.initialRating,
@@ -280,6 +285,7 @@ async function main() {
       model_config: args.modelConfig,
       current_divisions: CURRENT_DIVISIONS,
       current_snapshot_path: args.currentSnapshotPath,
+      current_snapshot_enabled: args.useCurrentSnapshot,
       title_context_path: args.titleContextPath,
       division_context_path: args.divisionContextPath,
       strict_head_to_head_window_months: STRICT_HEAD_TO_HEAD_WINDOW_MONTHS,
@@ -3007,6 +3013,10 @@ function parseArgs(argv) {
       args.minDivisionFights = Number(arg.slice("--min-division-fights=".length));
     } else if (arg.startsWith("--model-config=")) {
       args.modelConfigPath = arg.slice("--model-config=".length);
+    } else if (arg.startsWith("--as-of=")) {
+      args.asOfDate = arg.slice("--as-of=".length);
+    } else if (arg === "--no-current-snapshot") {
+      args.useCurrentSnapshot = false;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -3033,6 +3043,8 @@ Options:
   --active-window-months=NUMBER  Eligibility window since last fight.
   --min-division-fights=NUMBER   Minimum UFC fights in a division to rank.
   --model-config=PATH            Optional JSON file with model weight overrides.
+  --as-of=YYYY-MM-DD             Build rankings using only fights on or before this date.
+  --no-current-snapshot          Rank from model eligibility instead of current snapshot policy.
 `);
 }
 
@@ -3058,6 +3070,17 @@ function monthsBetween(startDate, endDate) {
   if (!(startDate instanceof Date) || Number.isNaN(startDate.getTime())) return Infinity;
   const days = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
   return Math.max(0, days / 30.4375);
+}
+
+function parseDateArg(value, label) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ""))) {
+    throw new Error(`${label} must be formatted as YYYY-MM-DD.`);
+  }
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || toIsoDate(date) !== value) {
+    throw new Error(`${label} is not a valid calendar date: ${value}`);
+  }
+  return date;
 }
 
 function toIsoDate(date) {

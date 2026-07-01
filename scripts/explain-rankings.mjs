@@ -7,6 +7,7 @@ const DEFAULTS = {
   rankingsPath: "data/model/rankings.json",
   outPath: "data/model/explanations.json",
   markdownOutPath: "data/model/explanations.md",
+  fighterOutDir: "data/model/fighter_explanations",
   division: "",
 };
 
@@ -62,6 +63,7 @@ async function main() {
   await Promise.all([
     writeJson(outputPath, explanations),
     fs.writeFile(markdownPath, buildMarkdown(explanations)),
+    writeFighterPages(explanations, args.fighterOutDir),
   ]);
 
   printSummary(explanations, args);
@@ -147,6 +149,13 @@ function explainFighter(fighter, modelRank) {
     recent_record_30m: fighter.recent_record_30m,
     recent_rating_change_30m: num(fighter.recent_rating_change_30m),
     months_inactive: num(fighter.months_inactive),
+    score_confidence: fighter.score_confidence ?? "",
+    score_confidence_label: fighter.score_confidence_label ?? "",
+    score_confidence_detail: fighter.score_confidence_detail ?? "",
+    score_gap_above: fighter.score_gap_above ?? null,
+    score_gap_below: fighter.score_gap_below ?? null,
+    score_band_rank_range: fighter.score_band_rank_range ?? "",
+    score_band_risk: fighter.score_band_risk ?? "",
     average_dominance: num(fighter.average_dominance),
     average_round_dominance: num(fighter.average_round_dominance),
     schedule_strength_score: fighter.schedule_strength_score,
@@ -281,6 +290,14 @@ function buildReviewFlags(fighter, { modelRank, policyTotal }) {
     });
   }
 
+  if (rank <= 10 && ["virtual_tie", "close"].includes(fighter.score_confidence)) {
+    flags.push({
+      code: "close_score_band",
+      priority: fighter.score_confidence === "virtual_tie" ? "medium" : "low",
+      detail: `${fighter.score_confidence_label}: ${fighter.score_confidence_detail}`,
+    });
+  }
+
   if (num(fighter.snapshot_order_adjustment) > 0) {
     flags.push({
       code: "snapshot_order_tiebreaker",
@@ -378,6 +395,7 @@ function buildMarkdown(explanations) {
       lines.push(`### ${fighter.rank}. ${fighter.fighter_name} (${fmt(fighter.final_score)})`, "");
       lines.push(fighter.explanation, "");
       lines.push(`- model score: \`${fmt(fighter.model_score)}\`; policy total: \`${signed(fighter.policy_total)}\`; model-only rank: \`#${fighter.model_rank}\``);
+      lines.push(`- confidence: \`${fighter.score_confidence_label || "Unknown"}\`; band: \`${fighter.score_band_rank_range || "-"}\`; detail: ${fighter.score_confidence_detail || "none"}`);
       lines.push(`- record: \`${fighter.record}\`; recent record: \`${fighter.recent_record_30m}\`; inactive: \`${fmt(fighter.months_inactive)} months\``);
       lines.push(`- best win: ${formatBestWin(fighter.best_win)}`);
       lines.push(`- top boosts: ${fighter.top_positive_drivers.slice(0, 3).map(formatComponent).join(", ") || "none"}`);
@@ -390,6 +408,82 @@ function buildMarkdown(explanations) {
   }
 
   return `${lines.join("\n")}\n`;
+}
+
+async function writeFighterPages(explanations, fighterOutDir) {
+  if (!fighterOutDir) return;
+  const root = path.resolve(process.cwd(), fighterOutDir);
+  await fs.rm(root, { recursive: true, force: true });
+  await fs.mkdir(root, { recursive: true });
+
+  const writes = [];
+  for (const division of explanations.divisions) {
+    const divisionDir = path.join(root, slug(division.division));
+    await fs.mkdir(divisionDir, { recursive: true });
+    for (const fighter of division.fighters) {
+      const filePath = path.join(divisionDir, `${String(fighter.rank).padStart(2, "0")}-${slug(fighter.fighter_name)}.md`);
+      writes.push(fs.writeFile(filePath, buildFighterMarkdownPage({ division, fighter })));
+    }
+  }
+  await Promise.all(writes);
+}
+
+function buildFighterMarkdownPage({ division, fighter }) {
+  const lines = [
+    `# ${fighter.fighter_name}`,
+    "",
+    `Division: \`${division.division}\``,
+    `Rank: \`#${fighter.rank}\``,
+    `Final score: \`${fmt(fighter.final_score)}\``,
+    `Model-only rank: \`#${fighter.model_rank}\``,
+    `Confidence: \`${fighter.score_confidence_label || "Unknown"}\``,
+    "",
+    "## Explanation",
+    "",
+    fighter.explanation,
+    "",
+    "## Score Breakdown",
+    "",
+    `- model score: \`${fmt(fighter.model_score)}\``,
+    `- policy total: \`${signed(fighter.policy_total)}\``,
+    `- score band: \`${fighter.score_band_rank_range || "-"}\``,
+    `- confidence detail: ${fighter.score_confidence_detail || "none"}`,
+    "",
+    "## Main Boosts",
+    "",
+    ...listOrNone(fighter.top_positive_drivers.slice(0, 6).map(formatComponent)),
+    "",
+    "## Main Drags",
+    "",
+    ...listOrNone(fighter.top_negative_drivers.slice(0, 6).map(formatComponent)),
+    "",
+    "## Resume Snapshot",
+    "",
+    `- record: \`${fighter.record}\``,
+    `- recent record: \`${fighter.recent_record_30m}\``,
+    `- inactive: \`${fmt(fighter.months_inactive)} months\``,
+    `- best win: ${formatBestWin(fighter.best_win)}`,
+    "",
+    "## Last Five",
+    "",
+    ...listOrNone(
+      fighter.last_five.map(
+        (fight) =>
+          `${fight.date || "unknown date"} ${fight.result || ""} vs ${fight.opponent || "Unknown"} by ${fight.method || "unknown method"} (${signed(fight.rating_change)} rating)`,
+      ),
+    ),
+  ];
+
+  if (fighter.review_flags.length > 0) {
+    lines.push("", "## Review Flags", "");
+    lines.push(...fighter.review_flags.map((flag) => `- ${flag.priority}: ${flag.code} - ${flag.detail}`));
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+
+function listOrNone(items) {
+  return items.length ? items.map((item) => `- ${item}`) : ["- none"];
 }
 
 function formatBestWin(bestWin) {
@@ -443,6 +537,8 @@ function parseArgs(argv) {
       args.outPath = arg.slice("--out=".length);
     } else if (arg.startsWith("--markdown-out=")) {
       args.markdownOutPath = arg.slice("--markdown-out=".length);
+    } else if (arg.startsWith("--fighter-out-dir=")) {
+      args.fighterOutDir = arg.slice("--fighter-out-dir=".length);
     } else if (arg.startsWith("--division=")) {
       args.division = arg.slice("--division=".length);
     } else {
@@ -463,6 +559,7 @@ Options:
   --rankings=PATH       Rankings JSON path.
   --out=PATH            Explanation JSON output path.
   --markdown-out=PATH   Explanation Markdown output path.
+  --fighter-out-dir=PATH Directory for per-fighter Markdown explanation pages.
   --division=NAME       Optional single-division filter.
 `);
 }
@@ -470,9 +567,14 @@ Options:
 function printSummary(explanations, args) {
   console.log(`Wrote explanations to ${args.outPath}`);
   console.log(`Wrote explanation review to ${args.markdownOutPath}`);
+  if (args.fighterOutDir) console.log(`Wrote fighter explanation pages to ${args.fighterOutDir}`);
   console.log(`fighters: ${explanations.summary.fighters}`);
   console.log(`review flags: ${explanations.summary.review_flags}`);
   console.log(`high-priority review flags: ${explanations.summary.high_priority_review_flags}`);
+}
+
+function slug(value) {
+  return normalizeName(value).replace(/\s+/g, "-");
 }
 
 function normalizeName(value) {

@@ -8,6 +8,7 @@ const DEFAULTS = {
   outPath: "data/model/tuning_report.json",
   markdownOutPath: "data/model/tuning_report.md",
   runRoot: "data/model/tuning_runs",
+  assertionsPath: "data/ranking_inputs/model_assertions.json",
   since: "2024-01-01",
   limit: null,
   keepRuns: true,
@@ -56,7 +57,7 @@ async function main() {
 
   for (const [index, candidate] of selectedCandidates.entries()) {
     console.log(`[${index + 1}/${selectedCandidates.length}] ${candidate.name}`);
-    results.push(await runCandidate({ candidate, runRoot, since: args.since }));
+    results.push(await runCandidate({ candidate, runRoot, since: args.since, assertionsInputPath: args.assertionsPath }));
   }
 
   const rankedResults = results.sort((a, b) => b.score - a.score);
@@ -67,7 +68,7 @@ async function main() {
     scoring: {
       higher_is_better: true,
       formula:
-        "accuracy*1000 - hard_failures*500 - soft_audit_flags*25 - diagnostics_fragile*10 - diagnostics_bias*5 - max_rank_move*2 - large_policy_adjustments*0.2",
+        "accuracy*1000 - hard_failures*500 - assertion_failures*350 - soft_audit_flags*25 - diagnostics_fragile*10 - diagnostics_bias*5 - max_rank_move*2 - large_policy_adjustments*0.2",
     },
     best_candidate: rankedResults[0],
     candidates: rankedResults,
@@ -88,7 +89,7 @@ async function main() {
   printSummary(report, args);
 }
 
-async function runCandidate({ candidate, runRoot, since }) {
+async function runCandidate({ candidate, runRoot, since, assertionsInputPath }) {
   const candidateDir = path.join(runRoot, candidate.name);
   const modelDir = path.join(candidateDir, "model");
   const configPath = path.join(candidateDir, "model_config.json");
@@ -96,6 +97,7 @@ async function runCandidate({ candidate, runRoot, since }) {
   const backtestPath = path.join(candidateDir, "backtest.json");
   const diagnosticsPath = path.join(candidateDir, "diagnostics.json");
   const diagnosticsMarkdownPath = path.join(candidateDir, "diagnostics.md");
+  const assertionsPath = path.join(candidateDir, "assertions.json");
 
   await fs.mkdir(candidateDir, { recursive: true });
   const config = {
@@ -130,15 +132,23 @@ async function runCandidate({ candidate, runRoot, since }) {
     `--out=${diagnosticsPath}`,
     `--markdown-out=${diagnosticsMarkdownPath}`,
   ]);
+  await runNode([
+    "scripts/assert-rankings.mjs",
+    `--rankings=${path.join(modelDir, "rankings.json")}`,
+    `--assertions=${assertionsInputPath}`,
+    `--out=${assertionsPath}`,
+    "--no-fail",
+  ]);
 
-  const [rankings, audit, backtest, diagnostics] = await Promise.all([
+  const [rankings, audit, backtest, diagnostics, assertions] = await Promise.all([
     readJson(path.join(modelDir, "rankings.json")),
     readJson(auditPath),
     readJson(backtestPath),
     readJson(diagnosticsPath),
+    readJson(assertionsPath),
   ]);
 
-  const scoreBreakdown = scoreCandidate({ audit, backtest, diagnostics });
+  const scoreBreakdown = scoreCandidate({ audit, backtest, diagnostics, assertions });
   return {
     name: candidate.name,
     config,
@@ -150,11 +160,17 @@ async function runCandidate({ candidate, runRoot, since }) {
     backtest_fights: backtest.summary.fights,
     audit_summary: audit.summary,
     diagnostics_summary: diagnostics.summary,
+    assertions_summary: {
+      total: assertions.total,
+      passed: assertions.passed,
+      failed: assertions.failed,
+    },
+    assertion_failures: assertions.failures,
     output_dir: path.relative(process.cwd(), candidateDir),
   };
 }
 
-function scoreCandidate({ audit, backtest, diagnostics }) {
+function scoreCandidate({ audit, backtest, diagnostics, assertions }) {
   const auditSummary = audit.summary ?? {};
   const diagnosticsSummary = diagnostics.summary ?? {};
   const hardFailures =
@@ -175,11 +191,13 @@ function scoreCandidate({ audit, backtest, diagnostics }) {
   const biasPenalty = num(diagnosticsSummary.bias_flags) * 5;
   const sensitivityPenalty = num(diagnosticsSummary.max_rank_move) * 2;
   const policyPenalty = largePolicyAdjustments * 0.2;
+  const assertionFailurePenalty = num(assertions.failed) * 350;
 
   return {
     score: round(
       accuracyPoints -
         hardFailurePenalty -
+        assertionFailurePenalty -
         softAuditPenalty -
         fragilePenalty -
         biasPenalty -
@@ -190,6 +208,8 @@ function scoreCandidate({ audit, backtest, diagnostics }) {
     accuracy_points: round(accuracyPoints, 2),
     hard_failures: hardFailures,
     hard_failure_penalty: hardFailurePenalty,
+    assertion_failures: num(assertions.failed),
+    assertion_failure_penalty: assertionFailurePenalty,
     soft_audit_flags: softAuditFlags,
     soft_audit_penalty: softAuditPenalty,
     fragile_penalty: fragilePenalty,
@@ -214,6 +234,7 @@ function buildMarkdown(report) {
     fmt(candidate.score),
     `${(candidate.backtest_accuracy * 100).toFixed(1)}%`,
     String(candidate.score_breakdown.hard_failures),
+    String(candidate.score_breakdown.assertion_failures),
     String(candidate.score_breakdown.soft_audit_flags),
     String(candidate.diagnostics_summary.bias_flags),
     String(candidate.diagnostics_summary.fragile_fighters),
@@ -234,7 +255,7 @@ function buildMarkdown(report) {
     "## Candidate Results",
     "",
     markdownTable(
-      ["Rank", "Candidate", "Score", "Accuracy", "Hard Flags", "Soft Flags", "Bias", "Fragile", "Output"],
+      ["Rank", "Candidate", "Score", "Accuracy", "Hard Flags", "Constraint Fails", "Soft Flags", "Bias", "Fragile", "Output"],
       rows,
     ),
     "",
@@ -302,6 +323,8 @@ function parseArgs(argv) {
       args.markdownOutPath = arg.slice("--markdown-out=".length);
     } else if (arg.startsWith("--run-root=")) {
       args.runRoot = arg.slice("--run-root=".length);
+    } else if (arg.startsWith("--assertions=")) {
+      args.assertionsPath = arg.slice("--assertions=".length);
     } else if (arg.startsWith("--since=")) {
       args.since = arg.slice("--since=".length);
     } else if (arg.startsWith("--limit=")) {
@@ -334,6 +357,7 @@ Options:
   --out=PATH            Tuning JSON output path.
   --markdown-out=PATH   Tuning Markdown output path.
   --run-root=PATH       Directory for candidate run outputs.
+  --assertions=PATH     Assertion JSON path used by candidate constraint checks.
   --since=YYYY-MM-DD    Backtest start date.
   --limit=N             Number of predefined candidates to run.
   --no-keep-runs        Remove per-candidate run directories after writing the report.
@@ -348,6 +372,7 @@ function printSummary(report, args) {
   console.log(`score: ${fmt(best.score)}`);
   console.log(`accuracy: ${(best.backtest_accuracy * 100).toFixed(1)}%`);
   console.log(`hard failures: ${best.score_breakdown.hard_failures}`);
+  console.log(`assertion failures: ${best.score_breakdown.assertion_failures}`);
   console.log(`soft audit flags: ${best.score_breakdown.soft_audit_flags}`);
 }
 

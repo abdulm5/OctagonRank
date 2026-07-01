@@ -6,6 +6,8 @@ import path from "node:path";
 const DEFAULTS = {
   rankingsPath: "data/model/rankings.json",
   assertionsPath: "data/ranking_inputs/model_assertions.json",
+  outPath: "",
+  failOnRegression: true,
 };
 
 main().catch((error) => {
@@ -25,9 +27,14 @@ async function main() {
     readJson(path.resolve(process.cwd(), args.assertionsPath)),
   ]);
   const result = evaluateAssertions({ rankings, assertionFile });
+  if (args.outPath) {
+    const outputPath = path.resolve(process.cwd(), args.outPath);
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    await fs.writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`);
+  }
   printResult(result, args);
 
-  if (result.failures.length > 0) {
+  if (args.failOnRegression && result.failures.length > 0) {
     process.exitCode = 1;
   }
 }
@@ -158,6 +165,9 @@ function buildCheck({ assertion, index, pass, detail }) {
     type: assertion.type,
     fighter: assertion.fighter,
     other: assertion.other ?? "",
+    rank: assertion.rank ?? "",
+    min_rank: assertion.min_rank ?? "",
+    max_rank: assertion.max_rank ?? "",
     detail,
     rationale: assertion.rationale ?? "",
   };
@@ -200,6 +210,10 @@ function parseArgs(argv) {
       args.rankingsPath = arg.slice("--rankings=".length);
     } else if (arg.startsWith("--assertions=")) {
       args.assertionsPath = arg.slice("--assertions=".length);
+    } else if (arg.startsWith("--out=")) {
+      args.outPath = arg.slice("--out=".length);
+    } else if (arg === "--no-fail") {
+      args.failOnRegression = false;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -217,6 +231,8 @@ Usage:
 Options:
   --rankings=PATH     Rankings JSON path.
   --assertions=PATH   Assertion JSON path.
+  --out=PATH          Optional JSON output path.
+  --no-fail           Write/print failures but exit successfully.
 `);
 }
 

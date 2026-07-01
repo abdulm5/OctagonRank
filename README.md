@@ -107,9 +107,11 @@ npm run model:explain
 ```
 
 The explanation report writes `data/model/explanations.json` and
-`data/model/explanations.md`. It breaks each fighter into model score, policy
-movement, top positive drivers, top penalties, best win, recent form, and
-automatic review flags for rankings that need manual inspection.
+`data/model/explanations.md`, plus per-fighter Markdown pages under
+`data/model/fighter_explanations/`. It breaks each fighter into model score,
+policy movement, confidence band, top positive drivers, top penalties, best
+win, recent form, and automatic review flags for rankings that need manual
+inspection.
 
 The current model also uses those review patterns for a top-contender
 credibility gate, which visibly penalizes top-five or near-top-five placements
@@ -127,8 +129,22 @@ Run the first predictive backtest:
 npm run model:backtest
 ```
 
-The backtest writes `data/model/backtest.json` and checks how often the
-higher-rated pre-fight fighter won for fights since January 1, 2024.
+The backtest writes `data/model/backtest.json` and `data/model/backtest.md`.
+It checks how often the higher-rated pre-fight fighter won for fights since
+January 1, 2024, then breaks validation down by division, year, and rating-gap
+bucket.
+
+Generate historical ranking movement:
+
+```bash
+npm run model:history
+```
+
+The history report rebuilds historical snapshots with `--as-of` dates and
+current snapshot policy disabled by default, so future current rankings are not
+leaked into past snapshots. It writes `data/model/ranking_history.json` and
+`data/model/ranking_history.md` with top-five snapshots, rank movement, biggest
+risers, and biggest fallers.
 
 Run model diagnostics:
 
@@ -160,7 +176,7 @@ npm run model:tune
 ```
 
 The tuner rebuilds rankings for predefined candidate configurations, then runs
-audit, backtest, and diagnostics for each one. It writes
+audit, backtest, diagnostics, and ranking assertions for each one. It writes
 `data/model/tuning_report.json` and `data/model/tuning_report.md`; generated
 tuning runs stay under `data/model/tuning_runs/` and are ignored by git.
 
@@ -173,7 +189,8 @@ npm run model:assertions
 Assertions live in `data/ranking_inputs/model_assertions.json`. They guard
 high-signal relationships such as Paulo Costa staying above lower-snapshot LHW
 contenders, Islam remaining welterweight #1, and head-to-head relationships
-that should not regress during tuning.
+that should not regress during tuning. The assertion script can also write JSON
+with `--out=PATH`, which the tuner uses as a constraint score.
 
 ## Project Status
 
