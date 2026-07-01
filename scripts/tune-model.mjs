@@ -28,6 +28,10 @@ const CANDIDATES = [
   { name: "conservative_policy", weights: { current_context_prior: 0.95, rank_guard_strength: 0.85 } },
   { name: "resume_quality_blend", weights: { elite_resume: 1.08, opponent_elite_resume: 1.05, quality_win: 0.95 } },
   { name: "activity_heavier", weights: { recent_activity: 1.1, inactivity_penalty: 1.08 } },
+  { name: "less_top_contender_gate", weights: { top_contender_credibility: 0.75 } },
+  { name: "more_top_contender_gate", weights: { top_contender_credibility: 1.2 } },
+  { name: "less_snapshot_order", weights: { snapshot_order: 0.75 } },
+  { name: "more_snapshot_order", weights: { snapshot_order: 1.2 } },
 ];
 
 main().catch((error) => {

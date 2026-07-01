@@ -11,6 +11,8 @@ implemented upgrades:
 - schedule-strength adjustment for inflated win streaks,
 - automatic elite-resume scoring for long-term elite fighters,
 - fighter-level explanation reports with review flags,
+- top-contender credibility penalties for unsupported top-five pushes,
+- close-score snapshot-order tiebreaking for active contenders,
 - configurable model weights for validation runs,
 - an automated tuning pass across predefined model candidates,
 - a first predictive backtest using pre-fight model ratings.
@@ -100,6 +102,19 @@ top boosts, top drags, best win, recent form, and automatic review flags. This
 is meant to catch surprising cases like a top-five rank built mostly from
 recent form instead of title or elite-resume support.
 
+`top_contender_credibility`
+: Applies a visible penalty to top-five and near-top-five contenders whose
+recent form is not supported by current snapshot position, elite-resume value,
+title-lineage wins, or strong recent win quality. This is designed to catch
+cases where a fighter is riding a recent streak over weaker opposition into an
+unusually high contender slot.
+
+`snapshot_order`
+: Applies a small, visible tiebreaker when an active higher-snapshot contender
+with a recent win is only narrowly behind lower-snapshot fighters. This keeps
+the current snapshot from being ignored in close-score cases without forcing
+the entire official order.
+
 ## Commands
 
 ```bash
@@ -154,10 +169,11 @@ After the v0.8 changes:
 - data-quality flags: `0`
 - remaining head-to-head violations: `0`
 - unexplained elite snapshot drift: `0`
-- justified elite snapshot drift: `6`
+- justified elite snapshot drift: `4`
 - inactive top-ranked flags: `0`
 - low-sample overboost flags: `0`
 - old-opponent over-credit flags: `0`
+- large policy adjustments: `51`
 
 The justified elite snapshot drift bucket covers fighters whose current
 snapshot slot is high, but whose latest finish losses, recent losses, weak
@@ -180,10 +196,10 @@ systematic pressure.
 
 Current diagnostics summary:
 
-- bias flags: `4`
-- fragile fighters with 3+ rank movement: `1`
+- bias flags: `5`
+- fragile fighters with 3+ rank movement: `4`
 - max local sensitivity move: `3`
-- most sensitive component: `rank guard minus_10pct`
+- most sensitive component: `recent form plus_10pct`
 
 ## Current Backtest Snapshot
 
@@ -200,10 +216,10 @@ validation metric to improve against.
 
 ## Current Tuning Snapshot
 
-The latest full tuning sweep tested `14` predefined candidates.
+The latest full tuning sweep tested `18` predefined candidates.
 
-- best candidate: `less_schedule_strength`
-- score: `549.90`
+- best candidate: `more_recent_form`
+- score: `545.10`
 - backtest accuracy: `58.4%`
 - hard audit failures: `0`
 - soft audit flags: `0`

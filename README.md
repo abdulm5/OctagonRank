@@ -109,6 +109,15 @@ The explanation report writes `data/model/explanations.json` and
 movement, top positive drivers, top penalties, best win, recent form, and
 automatic review flags for rankings that need manual inspection.
 
+The current model also uses those review patterns for a top-contender
+credibility gate, which visibly penalizes top-five or near-top-five placements
+when recent form is not backed by elite resume, title-lineage wins, current
+snapshot support, or strong recent opponent quality.
+
+Close-score cases also use a visible snapshot-order tiebreaker so an active
+higher-snapshot contender with a recent win is not pushed below lower-snapshot
+fighters unless the model score gap is large enough to justify it.
+
 Run the first predictive backtest:
 
 ```bash

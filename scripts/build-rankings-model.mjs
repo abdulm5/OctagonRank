@@ -49,6 +49,8 @@ const DEFAULT_MODEL_CONFIG = {
     current_context_prior: 1,
     rank_guard_strength: 1,
     opponent_elite_resume: 1,
+    top_contender_credibility: 1,
+    snapshot_order: 1,
   },
 };
 
@@ -179,6 +181,10 @@ async function main() {
       current_context_prior: fighter.current_context_prior,
       entry_gate_penalty: fighter.entry_gate_penalty,
       entry_gate_status: fighter.entry_gate_status,
+      top_contender_credibility_penalty: fighter.top_contender_credibility_penalty,
+      top_contender_credibility_status: fighter.top_contender_credibility_status,
+      snapshot_order_adjustment: fighter.snapshot_order_adjustment,
+      snapshot_order_status: fighter.snapshot_order_status,
       title_context_adjustment: fighter.title_context_adjustment,
       title_context_status: fighter.title_context_status,
       title_context_target_rank: fighter.title_context_target_rank,
@@ -293,6 +299,10 @@ async function main() {
       legacy_penalty: "High raw ratings are dampened when they are supported mostly by older peak wins rather than recent ranked activity.",
       current_context: "A current division snapshot limits rankings to the active ranked pool and adds a smaller status prior instead of forcing contender order.",
       entry_gate: "Low-evidence ranked entries receive a visible penalty when they lack ranked or quality wins.",
+      top_contender_credibility:
+        "Top-five and near-top-five contenders can be penalized when recent form is not backed by current snapshot support, elite resume value, or strong recent win quality.",
+      snapshot_order:
+        "When scores are close, active higher-snapshot contenders with a recent win can be restored above lower-snapshot fighters as a transparent tiebreaker.",
       title_context: "Manual title-lineage context protects recent title losers, former champions, and similar cases when the pure score overreacts.",
       division_context: "Manual division moves remove fighters from old divisions and place them in the active division before snapshot policy is applied.",
       rank_guard: "Current elite contenders are protected by a confidence-based guard; active, proven fighters get more protection than inactive or thin-resume entries.",
@@ -589,6 +599,10 @@ function buildCurrentSnapshotRankings({
       current_context_prior: contextPrior,
       entry_gate_penalty: 0,
       entry_gate_status: "",
+      top_contender_credibility_penalty: 0,
+      top_contender_credibility_status: "",
+      snapshot_order_adjustment: 0,
+      snapshot_order_status: "",
       title_context_adjustment: 0,
       title_context_status: "",
       title_context_target_rank: null,
@@ -604,9 +618,11 @@ function buildCurrentSnapshotRankings({
   const guardedCandidates = applyTitleGuard(candidates);
   const titleContextCandidates = applyTitleContextPolicy(guardedCandidates, titleContextDivision, asOfDate);
   const gatedCandidates = applyRankedEntryGate(titleContextCandidates);
-  const rankGuardCandidates = applyRankDriftGuard(gatedCandidates, modelConfig);
+  const credibilityCandidates = applyTopContenderCredibilityGate(gatedCandidates, modelConfig);
+  const rankGuardCandidates = applyRankDriftGuard(credibilityCandidates, modelConfig);
   const headToHeadCandidates = applyHeadToHeadResolver(rankGuardCandidates, divisionName, fightImpacts, asOfDate);
-  const finalPolicyCandidates = applyTitleContextPolicy(headToHeadCandidates, titleContextDivision, asOfDate);
+  const snapshotOrderCandidates = applySnapshotOrderResolver(headToHeadCandidates, modelConfig, asOfDate);
+  const finalPolicyCandidates = applyTitleContextPolicy(snapshotOrderCandidates, titleContextDivision, asOfDate);
 
   return finalPolicyCandidates
     .sort((a, b) => b.final_score - a.final_score)
@@ -847,6 +863,89 @@ function applyRankedEntryGate(candidates) {
   return candidates;
 }
 
+function applyTopContenderCredibilityGate(candidates, modelConfig) {
+  const ranked = sortCandidates(candidates);
+
+  for (const [index, candidate] of ranked.entries()) {
+    const projectedRank = index + 1;
+    const credibilityGate = getTopContenderCredibilityGate(candidate, projectedRank, modelConfig);
+    if (!credibilityGate) continue;
+
+    candidate.top_contender_credibility_penalty = round(
+      num(candidate.top_contender_credibility_penalty) + credibilityGate.penalty,
+      2,
+    );
+    candidate.top_contender_credibility_status = credibilityGate.status;
+    candidate.current_context_adjustment = round(candidate.current_context_adjustment - credibilityGate.penalty, 2);
+    candidate.final_score = round(candidate.final_score - credibilityGate.penalty, 2);
+  }
+
+  return candidates;
+}
+
+function getTopContenderCredibilityGate(candidate, projectedRank, modelConfig) {
+  if (candidate.current_status === "Champion") return null;
+  if (projectedRank > 8) return null;
+  if (num(candidate.title_context_adjustment) > 0 || num(candidate.title_guard_adjustment) > 0) return null;
+
+  const snapshotRank = Number(candidate.current_snapshot_rank);
+  const eliteResumeScore = num(candidate.elite_resume_score);
+  const avgWinRating = num(candidate.avg_win_opponent_rating_last_5);
+  const recentForm = num(candidate.recent_form_adjustment);
+  const titleLineage = num(candidate.title_win_adjustment);
+  const qualityWin = num(candidate.quality_win_adjustment);
+  const bestWinAgeMonths = num(candidate.best_win_age_months);
+  const hasLowSnapshotSupport = Number.isFinite(snapshotRank) && snapshotRank >= 8;
+  const hasWeakRecentWinQuality = avgWinRating > 0 && avgWinRating < 1545 && recentForm > 18;
+  const hasLowEliteSupport = eliteResumeScore < 15;
+  const lacksTitleLineage = titleLineage <= 0;
+  const hasCredibilityConcern =
+    hasLowSnapshotSupport && hasLowEliteSupport && hasWeakRecentWinQuality && lacksTitleLineage;
+
+  if (!hasCredibilityConcern) return null;
+
+  let rawPenalty = 0;
+  const statuses = [];
+
+  if (hasLowSnapshotSupport) {
+    rawPenalty += 12 + Math.max(0, snapshotRank - 8) * 2.5;
+    statuses.push(`low_snapshot_support:${snapshotRank}`);
+  }
+
+  if (hasLowEliteSupport) {
+    rawPenalty += clamp((15 - eliteResumeScore) * 0.65, 3, 10);
+    statuses.push(`low_elite_resume:${round(eliteResumeScore, 1)}`);
+  }
+
+  if (hasWeakRecentWinQuality) {
+    rawPenalty += clamp((1545 - avgWinRating) * 0.45, 6, 16);
+    statuses.push(`weak_recent_win_quality:${round(avgWinRating, 1)}`);
+  }
+
+  if (bestWinAgeMonths > 36 && qualityWin > 0) {
+    rawPenalty += clamp((bestWinAgeMonths - 36) * 0.25, 0, 8);
+    statuses.push(`stale_best_win:${round(bestWinAgeMonths, 1)}m`);
+  }
+
+  if (lacksTitleLineage) {
+    rawPenalty += 5;
+    statuses.push("no_title_lineage_win");
+  }
+
+  const rankPressure = projectedRank <= 5 ? 1 : 0.55;
+  const cap = projectedRank <= 5 ? 45 : 24;
+  const penalty = round(
+    clamp(rawPenalty * rankPressure * getModelWeights(modelConfig).top_contender_credibility, 0, cap),
+    2,
+  );
+  if (penalty <= 0) return null;
+
+  return {
+    penalty,
+    status: `projected_rank:${projectedRank}|${statuses.join("|")}`,
+  };
+}
+
 function countRankedWins(candidate, rankedNames) {
   return candidate.last_five.filter(
     (fight) => fight.result === "W" && rankedNames.has(normalizeName(fight.opponent_name)),
@@ -936,6 +1035,90 @@ function applyHeadToHeadResolver(candidates, divisionName, fightImpacts, asOfDat
   }
 
   return candidates;
+}
+
+function applySnapshotOrderResolver(candidates, modelConfig, asOfDate) {
+  const orderedCandidates = [...candidates]
+    .filter((candidate) => Number(candidate.current_snapshot_rank) > 0)
+    .sort((a, b) => Number(a.current_snapshot_rank) - Number(b.current_snapshot_rank));
+
+  for (const candidate of orderedCandidates) {
+    const guard = getSnapshotOrderGuard(candidate, modelConfig);
+    if (!guard) continue;
+
+    const ranked = sortCandidates(candidates);
+    const currentRank = ranked.indexOf(candidate) + 1;
+    if (currentRank > 0 && currentRank <= guard.maxRank) continue;
+
+    const target = ranked[Math.min(guard.maxRank - 1, ranked.length - 1)];
+    if (!target || target === candidate) continue;
+
+    const blockers = ranked.slice(guard.maxRank - 1, currentRank - 1);
+    if (blockers.some((blocker) => hasRecentLossTo(candidate, blocker, asOfDate))) continue;
+
+    const scoreGap = round(target.final_score - candidate.final_score, 2);
+    if (scoreGap > guard.window) continue;
+
+    const adjustment = round(Math.min(scoreGap + 0.1, guard.maxAdjustment), 2);
+    if (adjustment <= 0) continue;
+
+    candidate.snapshot_order_adjustment = round(num(candidate.snapshot_order_adjustment) + adjustment, 2);
+    candidate.snapshot_order_status = [
+      `snapshot_rank:${candidate.current_snapshot_rank}`,
+      `target_rank:${guard.maxRank}`,
+      `score_gap:${scoreGap}`,
+      guard.reason,
+    ].join("|");
+    candidate.current_context_adjustment = round(candidate.current_context_adjustment + adjustment, 2);
+    candidate.final_score = round(candidate.final_score + adjustment, 2);
+  }
+
+  return candidates;
+}
+
+function getSnapshotOrderGuard(candidate, modelConfig) {
+  if (candidate.current_status === "Champion") return null;
+  if (num(candidate.entry_gate_penalty) > 0 || num(candidate.top_contender_credibility_penalty) > 0) return null;
+
+  const snapshotRank = Number(candidate.current_snapshot_rank);
+  if (!Number.isFinite(snapshotRank) || snapshotRank <= 0 || snapshotRank > 8) return null;
+
+  const latestFight = candidate.last_five?.[0];
+  const recentRecord = parseRecord(candidate.recent_record_30m);
+  const hasRecentWin = latestFight?.result === "W";
+  const hasPositiveRecentRecord = recentRecord.wins > recentRecord.losses;
+  if (!hasRecentWin && !hasPositiveRecentRecord) return null;
+  if (latestFight?.result === "L") return null;
+
+  let maxRank = null;
+  let window = 0;
+
+  if (snapshotRank <= 3) {
+    maxRank = Math.min(snapshotRank + 2, 5);
+    window = 10;
+  } else if (snapshotRank <= 6) {
+    maxRank = snapshotRank;
+    window = 14;
+  } else {
+    maxRank = snapshotRank + 1;
+    window = 10;
+  }
+
+  const weight = getModelWeights(modelConfig).snapshot_order;
+  return {
+    maxRank,
+    window: round(window * weight, 2),
+    maxAdjustment: round(window * weight + 0.1, 2),
+    reason: hasRecentWin ? "latest_win" : "positive_recent_record",
+  };
+}
+
+function hasRecentLossTo(candidate, opponent, asOfDate) {
+  return candidate.last_five.some((fight) => {
+    if (fight.result !== "L") return false;
+    if (normalizeName(fight.opponent_name) !== normalizeName(opponent.fighter_name)) return false;
+    return monthsBetween(new Date(fight.date), asOfDate) <= ELITE_HEAD_TO_HEAD_WINDOW_MONTHS;
+  });
 }
 
 function upsertHeadToHeadOverride({ winner, loser, impact, adjustment, rule }) {
@@ -1126,6 +1309,10 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     current_context_prior: 0,
     entry_gate_penalty: 0,
     entry_gate_status: "",
+    top_contender_credibility_penalty: 0,
+    top_contender_credibility_status: "",
+    snapshot_order_adjustment: 0,
+    snapshot_order_status: "",
     title_context_adjustment: 0,
     title_context_status: "",
     title_context_target_rank: null,
@@ -1205,6 +1392,10 @@ function makeSyntheticCandidate({ name, divisionName, args }) {
     current_context_prior: 0,
     entry_gate_penalty: 0,
     entry_gate_status: "",
+    top_contender_credibility_penalty: 0,
+    top_contender_credibility_status: "",
+    snapshot_order_adjustment: 0,
+    snapshot_order_status: "",
     title_context_adjustment: 0,
     title_context_status: "",
     title_context_target_rank: null,

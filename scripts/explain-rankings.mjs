@@ -28,6 +28,7 @@ const PENALTY_COMPONENTS = [
   ["inactivity_penalty", "Inactivity penalty"],
   ["legacy_penalty", "Legacy decay"],
   ["division_transfer_penalty", "Division-transfer penalty"],
+  ["top_contender_credibility_penalty", "Top-contender credibility"],
 ];
 
 const POLICY_COMPONENTS = [
@@ -36,6 +37,7 @@ const POLICY_COMPONENTS = [
   ["title_context_adjustment", "Title-context policy"],
   ["rank_guard_adjustment", "Rank guard"],
   ["head_to_head_adjustment", "Head-to-head resolver"],
+  ["snapshot_order_adjustment", "Snapshot-order tiebreaker"],
   ["entry_gate_penalty", "Entry gate"],
 ];
 
@@ -268,6 +270,22 @@ function buildReviewFlags(fighter, { modelRank, policyTotal }) {
       code: "policy_boosted_above_model_rank",
       priority: "medium",
       detail: `Model-only rank is #${modelRank}, but policy places the fighter at #${rank}.`,
+    });
+  }
+
+  if (num(fighter.top_contender_credibility_penalty) > 0) {
+    flags.push({
+      code: "top_contender_credibility_gate",
+      priority: "medium",
+      detail: `Credibility gate applied a ${fmt(fighter.top_contender_credibility_penalty)} point penalty: ${fighter.top_contender_credibility_status}.`,
+    });
+  }
+
+  if (num(fighter.snapshot_order_adjustment) > 0) {
+    flags.push({
+      code: "snapshot_order_tiebreaker",
+      priority: "low",
+      detail: `Snapshot-order tiebreaker added ${fmt(fighter.snapshot_order_adjustment)} points: ${fighter.snapshot_order_status}.`,
     });
   }
 
