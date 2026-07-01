@@ -43,7 +43,7 @@ Build for production:
 npm run build
 ```
 
-Scrape UFCStats completed fights from January 1, 2000 through June 24, 2026:
+Scrape UFCStats completed fights from January 1, 2000 through June 30, 2026:
 
 ```bash
 npm run scrape:ufcstats
@@ -88,7 +88,8 @@ violations, inactive top-ranked fighters, old-opponent over-credit, thin
 top-15 entries, large policy adjustments, and data-quality issues such as
 duplicate snapshot entries or unexplained division transfers.
 
-Generate a readable review report after the audit:
+Generate a readable review report after the audit, diagnostics, and score-band
+checks:
 
 ```bash
 npm run model:review
@@ -96,7 +97,8 @@ npm run model:review
 
 The review writes `data/model/audit-review.md`. It summarizes the audit,
 prints each division's top 15 with score explanations, and lists the exact
-fighters that need the next tuning pass.
+fighters, diagnostic bias groups, fragile rankings, sensitive score components,
+and close-score clusters that need the next tuning pass.
 
 Generate fighter-level ranking explanations:
 
@@ -139,6 +141,17 @@ Diagnostics write `data/model/diagnostics.json` and
 score components, and group-level pressure on categories like low-sample
 fighters, inactive fighters, dominant-win fighters, and schedule-penalized
 fighters.
+
+Generate close-score bands:
+
+```bash
+npm run model:bands
+```
+
+The band report writes `data/model/score-bands.json` and
+`data/model/score-bands.md`. It marks adjacent rankings as virtual ties, close
+pairs, or clear separations, then groups tightly packed fighters so tuning does
+not overreact to rankings that are effectively tied.
 
 Tune model weights against validation metrics:
 

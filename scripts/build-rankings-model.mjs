@@ -30,6 +30,8 @@ const ELITE_OPPONENT_RATING = 1600;
 const CHAMPIONSHIP_OPPONENT_RATING = 1625;
 const ELITE_RESUME_RATING = 1600;
 const CHAMPIONSHIP_RESUME_RATING = 1660;
+const SCORE_BAND_TIE_THRESHOLD = 3;
+const SCORE_BAND_CLOSE_THRESHOLD = 8;
 
 const DEFAULT_MODEL_CONFIG = {
   name: "default",
@@ -159,7 +161,7 @@ async function main() {
     fightImpacts.push(impact);
   }
 
-  const divisions = buildDivisionRankings({
+  const divisions = addScoreConfidenceLabels(buildDivisionRankings({
     divisionRatings,
     asOfDate,
     args,
@@ -167,7 +169,7 @@ async function main() {
     titleContext,
     divisionContext,
     fightImpacts,
-  });
+  }));
   const fighterScores = divisions.flatMap((division) =>
     division.rankings.map((fighter) => ({
       division: division.division,
@@ -176,6 +178,16 @@ async function main() {
       fighter_id: fighter.fighter_id,
       fighter_name: fighter.fighter_name,
       final_score: fighter.final_score,
+      score_confidence: fighter.score_confidence,
+      score_confidence_label: fighter.score_confidence_label,
+      score_confidence_detail: fighter.score_confidence_detail,
+      score_gap_above: fighter.score_gap_above,
+      score_gap_below: fighter.score_gap_below,
+      nearest_score_gap: fighter.nearest_score_gap,
+      score_band_rank_range: fighter.score_band_rank_range,
+      score_band_size: fighter.score_band_size,
+      score_band_score_spread: fighter.score_band_score_spread,
+      score_band_risk: fighter.score_band_risk,
       raw_score: fighter.raw_score,
       model_score: fighter.model_score,
       current_context_prior: fighter.current_context_prior,
@@ -244,7 +256,7 @@ async function main() {
   );
 
   const output = {
-    model_version: "v0.8.4-elite-resume",
+    model_version: "v0.8.5-score-confidence",
     generated_at: new Date().toISOString(),
     as_of: toIsoDate(asOfDate),
     source: summary.source ?? "ufcstats.com",
@@ -276,6 +288,8 @@ async function main() {
       elite_head_to_head_score_window: ELITE_HEAD_TO_HEAD_SCORE_WINDOW,
       head_to_head_window_months: HEAD_TO_HEAD_WINDOW_MONTHS,
       head_to_head_score_window: HEAD_TO_HEAD_SCORE_WINDOW,
+      score_band_tie_threshold: SCORE_BAND_TIE_THRESHOLD,
+      score_band_close_threshold: SCORE_BAND_CLOSE_THRESHOLD,
     },
     methodology: {
       base_rating: "Division-specific Elo rating updated chronologically after each fight.",
@@ -308,6 +322,7 @@ async function main() {
       rank_guard: "Current elite contenders are protected by a confidence-based guard; active, proven fighters get more protection than inactive or thin-resume entries.",
       head_to_head: "Recent direct wins can move a fighter above a close-scored opponent they beat in the same division, with a stricter one-year rule.",
       title_guard: "The current champion is kept above contenders in that division; the required adjustment is exposed in the output.",
+      score_confidence: "Adjacent final-score gaps are labeled as virtual ties, close pairs, or clear separations so rank order is not over-read when scores are tightly packed.",
     },
     divisions,
   };
@@ -477,6 +492,127 @@ function processFight({
     winner_post_rating: round(winner.rating, 2),
     loser_post_rating: round(loser.rating, 2),
   };
+}
+
+function addScoreConfidenceLabels(divisions) {
+  for (const division of divisions) {
+    const ranked = [...(division.rankings ?? [])].sort((a, b) => a.rank - b.rank);
+    if (!ranked.length) continue;
+
+    const adjacentPairs = [];
+    for (let index = 0; index < ranked.length - 1; index += 1) {
+      adjacentPairs.push({
+        higher: ranked[index],
+        lower: ranked[index + 1],
+        gap: round(num(ranked[index].final_score) - num(ranked[index + 1].final_score), 2),
+      });
+    }
+
+    for (const [index, fighter] of ranked.entries()) {
+      const gapAbove = index === 0 ? null : adjacentPairs[index - 1]?.gap ?? null;
+      const gapBelow = index === ranked.length - 1 ? null : adjacentPairs[index]?.gap ?? null;
+      const finiteGaps = [gapAbove, gapBelow].filter((gap) => Number.isFinite(gap));
+      const nearestGap = finiteGaps.length ? round(Math.min(...finiteGaps), 2) : null;
+      const confidence = classifyScoreConfidence(nearestGap);
+
+      fighter.score_confidence = confidence;
+      fighter.score_confidence_label = getScoreConfidenceLabel(confidence);
+      fighter.score_confidence_detail = buildScoreConfidenceDetail({ confidence, nearestGap, gapAbove, gapBelow });
+      fighter.score_gap_above = gapAbove;
+      fighter.score_gap_below = gapBelow;
+      fighter.nearest_score_gap = nearestGap;
+    }
+
+    for (const band of buildScoreConfidenceBands(ranked, adjacentPairs)) {
+      for (const fighter of band.fighters) {
+        fighter.score_band_rank_range = band.rankRange;
+        fighter.score_band_size = band.size;
+        fighter.score_band_score_spread = band.scoreSpread;
+        fighter.score_band_risk = band.risk;
+      }
+    }
+  }
+
+  return divisions;
+}
+
+function buildScoreConfidenceBands(ranked, adjacentPairs) {
+  const bands = [];
+  let current = [];
+
+  for (const fighter of ranked) {
+    if (!current.length) {
+      current.push(fighter);
+      continue;
+    }
+
+    const previous = current[current.length - 1];
+    const adjacentPair = adjacentPairs.find((pair) => pair.higher === previous && pair.lower === fighter);
+    if (adjacentPair && adjacentPair.gap <= SCORE_BAND_CLOSE_THRESHOLD) {
+      current.push(fighter);
+    } else {
+      bands.push(makeScoreConfidenceBand(current, adjacentPairs));
+      current = [fighter];
+    }
+  }
+
+  bands.push(makeScoreConfidenceBand(current, adjacentPairs));
+  return bands;
+}
+
+function makeScoreConfidenceBand(fighters, adjacentPairs) {
+  const first = fighters[0];
+  const last = fighters[fighters.length - 1];
+  const internalPairs = adjacentPairs.filter((pair) => pair.higher.rank >= first.rank && pair.lower.rank <= last.rank);
+  const virtualTiePairs = internalPairs.filter((pair) => pair.gap <= SCORE_BAND_TIE_THRESHOLD).length;
+  const scoreSpread = round(num(first.final_score) - num(last.final_score), 2);
+  const risk =
+    fighters.length === 1
+      ? "low"
+      : virtualTiePairs > 0
+        ? "high"
+        : "medium";
+
+  return {
+    fighters,
+    rankRange: first.rank === last.rank ? String(first.rank) : `${first.rank}-${last.rank}`,
+    size: fighters.length,
+    scoreSpread,
+    risk,
+  };
+}
+
+function classifyScoreConfidence(nearestGap) {
+  if (nearestGap === null || nearestGap === undefined) return "clear";
+  if (nearestGap <= SCORE_BAND_TIE_THRESHOLD) return "virtual_tie";
+  if (nearestGap <= SCORE_BAND_CLOSE_THRESHOLD) return "close";
+  return "clear";
+}
+
+function getScoreConfidenceLabel(confidence) {
+  if (confidence === "virtual_tie") return "Virtual tie";
+  if (confidence === "close") return "Close";
+  return "Clear separation";
+}
+
+function buildScoreConfidenceDetail({ confidence, nearestGap, gapAbove, gapBelow }) {
+  const gapText = nearestGap === null ? "No adjacent contender gap available" : `${formatScoreGap(nearestGap)} nearest-point gap`;
+  const sideText = [
+    gapAbove === null ? null : `${formatScoreGap(gapAbove)} above`,
+    gapBelow === null ? null : `${formatScoreGap(gapBelow)} below`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const suffix = sideText ? ` (${sideText})` : "";
+
+  if (confidence === "virtual_tie") return `Low-confidence order: ${gapText}${suffix}.`;
+  if (confidence === "close") return `Close but separated: ${gapText}${suffix}.`;
+  return `Clearer separation: ${gapText}${suffix}.`;
+}
+
+function formatScoreGap(value) {
+  if (value === null || value === undefined) return "";
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapshot, titleContext, divisionContext, fightImpacts }) {

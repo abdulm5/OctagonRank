@@ -6,6 +6,8 @@ import path from "node:path";
 const DEFAULTS = {
   rankingsPath: "data/model/rankings.json",
   auditPath: "data/model/audit.json",
+  diagnosticsPath: "data/model/diagnostics.json",
+  scoreBandsPath: "data/model/score-bands.json",
   outPath: "data/model/audit-review.md",
 };
 
@@ -21,39 +23,45 @@ async function main() {
     return;
   }
 
-  const [rankings, audit] = await Promise.all([
+  const [rankings, audit, diagnostics, scoreBands] = await Promise.all([
     readJson(path.resolve(process.cwd(), args.rankingsPath)),
     readJson(path.resolve(process.cwd(), args.auditPath)),
+    readOptionalJson(path.resolve(process.cwd(), args.diagnosticsPath), null),
+    readOptionalJson(path.resolve(process.cwd(), args.scoreBandsPath), null),
   ]);
 
-  const review = buildReview({ rankings, audit });
+  const review = buildReview({ rankings, audit, diagnostics, scoreBands });
   const outputPath = path.resolve(process.cwd(), args.outPath);
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, review);
 
-  printSummary({ audit, outPath: args.outPath });
+  printSummary({ audit, diagnostics, scoreBands, outPath: args.outPath });
 }
 
-function buildReview({ rankings, audit }) {
+function buildReview({ rankings, audit, diagnostics, scoreBands }) {
   const sections = [
     "# OctagonRank Audit Review",
-    metadataSection({ rankings, audit }),
+    metadataSection({ rankings, audit, diagnostics, scoreBands }),
     summarySection(audit),
     divisionReviewSection(rankings),
     flaggedIssuesSection(audit),
-    nextTuningSection(audit),
+    diagnosticsSection(diagnostics),
+    scoreBandsSection(scoreBands),
+    nextTuningSection(audit, diagnostics, scoreBands),
   ];
 
   return `${sections.join("\n\n")}\n`;
 }
 
-function metadataSection({ rankings, audit }) {
+function metadataSection({ rankings, audit, diagnostics, scoreBands }) {
   return [
     "## Run Metadata",
     "",
     `- Model version: \`${rankings.model_version ?? audit.model_version ?? "unknown"}\``,
     `- Rankings as of: \`${rankings.as_of ?? audit.as_of ?? "unknown"}\``,
     `- Audit generated at: \`${audit.generated_at ?? "unknown"}\``,
+    `- Diagnostics generated at: \`${diagnostics?.generated_at ?? "not loaded"}\``,
+    `- Score bands generated at: \`${scoreBands?.generated_at ?? "not loaded"}\``,
     `- Review generated at: \`${new Date().toISOString()}\``,
   ].join("\n");
 }
@@ -207,9 +215,149 @@ function flaggedIssuesSection(audit) {
   return sections.join("\n\n");
 }
 
-function nextTuningSection(audit) {
+function diagnosticsSection(diagnostics) {
+  if (!diagnostics) {
+    return [
+      "## Diagnostics Review",
+      "",
+      "Diagnostics were not loaded. Run `npm run model:diagnostics` before `npm run model:review` for bias and fragility names.",
+    ].join("\n");
+  }
+
+  const summary = diagnostics.summary ?? {};
+  const summaryRows = [
+    ["Ranked fighters", summary.ranked_fighters ?? 0, "info"],
+    ["Bias flags", summary.bias_flags ?? 0, severityForDiagnostic("bias_flags", summary.bias_flags)],
+    ["Fragile fighters", summary.fragile_fighters ?? 0, severityForDiagnostic("fragile_fighters", summary.fragile_fighters)],
+    ["Max rank move", summary.max_rank_move ?? 0, severityForDiagnostic("max_rank_move", summary.max_rank_move)],
+    ["Most sensitive component", summary.most_sensitive_component || "none", "review"],
+  ];
+
+  const groupByLabel = new Map((diagnostics.bias_groups ?? []).map((group) => [group.label, group]));
+  const biasRows = (diagnostics.bias_flags ?? []).map((flag) => {
+    const examples = (groupByLabel.get(flag.group)?.notable_examples ?? [])
+      .slice(0, 4)
+      .map((example) => `${example.fighter} (${example.division} #${example.rank})`)
+      .join(", ");
+    return [flag.severity, flag.group, flag.type, flag.detail, examples || "-"];
+  });
+
+  const fragileRows = (diagnostics.sensitivity?.fighter_sensitivity ?? [])
+    .filter((row) => num(row.max_abs_rank_move) >= 3)
+    .slice(0, 15)
+    .map((row) => [
+      row.division,
+      row.fighter,
+      row.max_abs_rank_move,
+      row.tests_moved_2plus,
+      row.tests_moved_3plus,
+      row.worst_case ? `${row.worst_case.component} ${row.worst_case.direction}` : "-",
+      row.worst_case ? `${row.worst_case.old_rank} -> ${row.worst_case.new_rank}` : "-",
+    ]);
+
+  const componentRows = (diagnostics.sensitivity?.component_tests ?? [])
+    .slice()
+    .sort((a, b) => b.unstable_count_3plus - a.unstable_count_3plus || b.max_abs_rank_move - a.max_abs_rank_move)
+    .slice(0, 10)
+    .map((test) => [
+      test.label,
+      test.direction,
+      test.type,
+      fmt(test.avg_abs_rank_move),
+      test.max_abs_rank_move,
+      test.unstable_count_3plus,
+      (test.biggest_movers ?? [])
+        .slice(0, 3)
+        .map((move) => `${move.fighter} ${move.old_rank}->${move.new_rank}`)
+        .join(", ") || "-",
+    ]);
+
+  return [
+    markdownTable("## Diagnostics Summary", ["Signal", "Value", "Severity"], summaryRows),
+    issueTable(
+      "## Diagnostic Bias Flags",
+      biasRows,
+      ["Severity", "Group", "Type", "Detail", "Example Fighters"],
+      (row) => row,
+      "No diagnostic bias flags crossed thresholds.",
+    ),
+    issueTable(
+      "## Fragile Fighters",
+      fragileRows,
+      ["Division", "Fighter", "Max Move", "2+ Move Tests", "3+ Move Tests", "Worst Component", "Worst Rank Change"],
+      (row) => row,
+      "No fighter moved 3+ spots under local sensitivity checks.",
+    ),
+    issueTable(
+      "## Most Sensitive Score Components",
+      componentRows,
+      ["Component", "Direction", "Type", "Avg Move", "Max Move", "3+ Movers", "Largest Movers"],
+      (row) => row,
+      "No score component produced meaningful rank movement.",
+    ),
+  ].join("\n\n");
+}
+
+function scoreBandsSection(scoreBands) {
+  if (!scoreBands) {
+    return [
+      "## Score-Band Review",
+      "",
+      "Score bands were not loaded. Run `npm run model:bands` before `npm run model:review` for close-score clusters.",
+    ].join("\n");
+  }
+
+  const summaryRows = Object.entries(scoreBands.summary ?? {}).map(([check, count]) => [
+    humanizeKey(check),
+    String(count),
+    severityForScoreBand(check, count),
+  ]);
+  const bandRows = (scoreBands.most_uncertain_bands ?? []).slice(0, 15).map((band) => [
+    band.risk,
+    band.division,
+    band.rank_range,
+    (band.fighters ?? []).map((fighter) => `${fighter.rank}. ${fighter.fighter}`).join(", "),
+    fmt(band.score_spread),
+    fmt(band.max_adjacent_gap),
+    band.max_sensitivity_move,
+    band.interpretation,
+  ]);
+  const fighterRows = (scoreBands.most_uncertain_fighters ?? []).slice(0, 15).map((fighter) => [
+    fighter.uncertainty,
+    fighter.division,
+    fighter.rank,
+    fighter.fighter,
+    fmt(fighter.nearest_gap),
+    fighter.gap_above === null ? "-" : fmt(fighter.gap_above),
+    fighter.gap_below === null ? "-" : fmt(fighter.gap_below),
+    fighter.max_sensitivity_move,
+    fighter.worst_sensitivity_component || "-",
+  ]);
+
+  return [
+    markdownTable("## Score-Band Summary", ["Signal", "Value", "Severity"], summaryRows),
+    issueTable(
+      "## Most Uncertain Score Bands",
+      bandRows,
+      ["Risk", "Division", "Ranks", "Fighters", "Spread", "Max Adj Gap", "Max Sensitivity", "Interpretation"],
+      (row) => row,
+      "No close-score bands detected.",
+    ),
+    issueTable(
+      "## Most Uncertain Score-Band Fighters",
+      fighterRows,
+      ["Uncertainty", "Division", "Rank", "Fighter", "Nearest Gap", "Gap Above", "Gap Below", "Max Sensitivity", "Worst Component"],
+      (row) => row,
+      "No uncertain score-band fighters detected.",
+    ),
+  ].join("\n\n");
+}
+
+function nextTuningSection(audit, diagnostics, scoreBands) {
   const items = [];
   const summary = audit.summary ?? {};
+  const diagnosticSummary = diagnostics?.summary ?? {};
+  const scoreBandSummary = scoreBands?.summary ?? {};
   if (num(summary.recent_head_to_head_violations) > 0) {
     items.push("Review the remaining head-to-head flags first. These usually show where the resolver is too narrow or where a post-fight loss should matter more.");
   }
@@ -233,6 +381,15 @@ function nextTuningSection(audit) {
   }
   if (num(summary.data_quality_flags) > 0) {
     items.push("Fix data-quality flags before formula tuning; duplicated snapshot entries and unexplained division transfers can create fake ranking problems.");
+  }
+  if (num(diagnosticSummary.fragile_fighters) > 0) {
+    items.push("Review fragile fighters next; these are rankings where a small component change moves a fighter three or more spots.");
+  }
+  if (num(diagnosticSummary.bias_flags) > 0) {
+    items.push("Review diagnostic bias groups before broad weight tuning so the model does not overfit to snapshot, title-context, or schedule-strength policy.");
+  }
+  if (num(scoreBandSummary.high_risk_bands) > 0) {
+    items.push("Treat high-risk score bands as uncertainty zones; tune only when a fighter looks wrong outside a close-score cluster.");
   }
 
   if (items.length === 0) {
@@ -357,14 +514,7 @@ function explainFighter(fighter) {
 }
 
 function totalPolicyAdjustment(fighter) {
-  return (
-    num(fighter.current_context_adjustment) +
-    num(fighter.title_context_adjustment) +
-    num(fighter.rank_guard_adjustment) +
-    num(fighter.head_to_head_adjustment) +
-    num(fighter.title_guard_adjustment) -
-    num(fighter.entry_gate_penalty)
-  );
+  return num(fighter.final_score) - num(fighter.model_score);
 }
 
 function severityFor(check, count) {
@@ -377,8 +527,34 @@ function severityFor(check, count) {
   return "review";
 }
 
+function severityForDiagnostic(check, count) {
+  const value = num(count);
+  if (value === 0) return "clear";
+  if (check === "fragile_fighters" || check === "bias_flags") return value >= 5 ? "high" : "medium";
+  if (check === "max_rank_move") return value >= 4 ? "high" : value >= 2 ? "medium" : "review";
+  return "review";
+}
+
+function severityForScoreBand(check, count) {
+  const value = num(count);
+  if (value === 0) return "clear";
+  if (check === "high_risk_bands") return value >= 10 ? "high" : "medium";
+  if (check === "virtual_tie_pairs" || check === "score_bands") return value >= 25 ? "high" : "review";
+  if (check === "fragile_fighters_in_bands") return value > 0 ? "medium" : "clear";
+  return "info";
+}
+
 async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
+}
+
+async function readOptionalJson(filePath, fallback) {
+  try {
+    return await readJson(filePath);
+  } catch (error) {
+    if (error.code === "ENOENT") return fallback;
+    throw error;
+  }
 }
 
 function parseArgs(argv) {
@@ -390,6 +566,10 @@ function parseArgs(argv) {
       args.rankingsPath = arg.slice("--rankings=".length);
     } else if (arg.startsWith("--audit=")) {
       args.auditPath = arg.slice("--audit=".length);
+    } else if (arg.startsWith("--diagnostics=")) {
+      args.diagnosticsPath = arg.slice("--diagnostics=".length);
+    } else if (arg.startsWith("--score-bands=")) {
+      args.scoreBandsPath = arg.slice("--score-bands=".length);
     } else if (arg.startsWith("--out=")) {
       args.outPath = arg.slice("--out=".length);
     } else {
@@ -404,19 +584,30 @@ function printHelp() {
 
 Usage:
   npm run model:review
-  node scripts/review-audit.mjs --rankings=data/model/rankings.json --audit=data/model/audit.json --out=data/model/audit-review.md
+  node scripts/review-audit.mjs --rankings=data/model/rankings.json --audit=data/model/audit.json --diagnostics=data/model/diagnostics.json --score-bands=data/model/score-bands.json --out=data/model/audit-review.md
 
 Options:
-  --rankings=PATH  Generated rankings JSON path.
-  --audit=PATH     Generated audit JSON path.
-  --out=PATH       Markdown review output path.
+  --rankings=PATH     Generated rankings JSON path.
+  --audit=PATH        Generated audit JSON path.
+  --diagnostics=PATH  Generated diagnostics JSON path.
+  --score-bands=PATH  Generated score bands JSON path.
+  --out=PATH          Markdown review output path.
 `);
 }
 
-function printSummary({ audit, outPath }) {
+function printSummary({ audit, diagnostics, scoreBands, outPath }) {
   console.log(`Wrote audit review to ${outPath}`);
   for (const [check, count] of Object.entries(audit.summary ?? {})) {
     console.log(`${check}: ${count}`);
+  }
+  if (diagnostics?.summary) {
+    console.log(`bias_flags: ${diagnostics.summary.bias_flags}`);
+    console.log(`fragile_fighters: ${diagnostics.summary.fragile_fighters}`);
+    console.log(`max_rank_move: ${diagnostics.summary.max_rank_move}`);
+  }
+  if (scoreBands?.summary) {
+    console.log(`virtual_tie_pairs: ${scoreBands.summary.virtual_tie_pairs}`);
+    console.log(`high_risk_bands: ${scoreBands.summary.high_risk_bands}`);
   }
 }
 

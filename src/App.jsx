@@ -423,141 +423,344 @@ const mediaRankingOverrides = {
 const ourRankingOverrides = {
   Flyweight: [
     "Alexandre Pantoja",
-    "Brandon Royval",
-    "Tatsuro Taira",
     "Manel Kape",
-    "Charles Johnson",
-    "Joshua Van",
+    "Tatsuro Taira",
     "Kyoji Horiguchi",
-    "Loneer Kavanagh",
-    "Brandon Moreno",
-    "Amir Albazi",
     "Asu Almabayev",
-    "Steve Erceg",
+    "Loneer Kavanagh",
     "Alex Perez",
+    "Charles Johnson",
+    "Brandon Moreno",
     "Sumudaerji",
+    "Brandon Royval",
+    "Steve Erceg",
+    "Amir Albazi",
     "Mitch Raposo",
+    "Kevin Borjas",
   ],
   Bantamweight: [
     "Merab Dvalishvili",
     "Sean O'Malley",
     "Umar Nurmagomedov",
-    "Cory Sandhagen",
     "Raoni Barcelos",
     "Mario Bautista",
     "Song Yadong",
+    "Marcus McGhee",
     "Payton Talbott",
     "David Martinez",
-    "Marcus McGhee",
+    "Cory Sandhagen",
+    "Montel Jackson",
     "Farid Basharat",
-    "Deiveson Figueiredo",
     "Aiemann Zahabi",
     "Bryce Mitchell",
-    "Montel Jackson",
+    "Deiveson Figueiredo",
   ],
   Featherweight: [
     "Movsar Evloev",
-    "Diego Lopes",
     "Lerone Murphy",
-    "Aljamain Sterling",
+    "Diego Lopes",
     "Jean Silva",
+    "Aljamain Sterling",
     "Arnold Allen",
     "Nathaniel Wood",
-    "Youssef Zalal",
-    "Kevin Vallejos",
-    "Steve Garcia",
     "Pat Sabatini",
+    "Steve Garcia",
+    "Kevin Vallejos",
+    "Youssef Zalal",
     "Yair Rodriguez",
     "Melquizael Costa",
+    "Jose Delgado",
     "Aaron Pico",
-    "Jose Miguel Delgado",
   ],
   Lightweight: [
     "Ilia Topuria",
     "Arman Tsarukyan",
     "Charles Oliveira",
-    "Max Holloway",
     "Benoit Saint Denis",
+    "Max Holloway",
     "Mateusz Gamrot",
-    "Mauricio Ruffy",
-    "Paddy Pimblett",
-    "Renato Moicano",
-    "Dan Hooker",
-    "Rafael Fiziev",
     "Quillan Salkilld",
-    "Beneil Dariush",
+    "Renato Moicano",
+    "Paddy Pimblett",
+    "Mauricio Ruffy",
     "Tom Nolan",
+    "Rafael Fiziev",
     "Manuel Torres",
+    "Beneil Dariush",
+    "Dan Hooker",
   ],
   Welterweight: [
     "Ian Machado Garry",
     "Carlos Prates",
     "Michael Morales",
-    "Jack Della Maddalena",
     "Sean Brady",
-    "Gabriel Bonfim",
-    "Belal Muhammad",
-    "Leon Edwards",
+    "Jack Della Maddalena",
     "Kamaru Usman",
+    "Gabriel Bonfim",
     "Joaquin Buckley",
-    "Yaroslav Amosov",
-    "Mike Malott",
-    "Michael Venom Page",
-    "Uros Medic",
+    "Belal Muhammad",
     "Daniel Rodriguez",
+    "Yaroslav Amosov",
+    "Uros Medic",
+    "Mike Malott",
+    "Leon Edwards",
+    "Michael Page",
   ],
   Middleweight: [
     "Khamzat Chimaev",
-    "Dricus Du Plessis",
     "Nassourdine Imavov",
-    "Brendan Allen",
+    "Dricus Du Plessis",
     "Anthony Hernandez",
-    "Caio Borralho",
+    "Brendan Allen",
     "Joe Pyfer",
-    "Israel Adesanya",
-    "Reinier De Ridder",
-    "Jared Cannonier",
     "Gregory Rodrigues",
+    "Caio Borralho",
+    "Reinier De Ridder",
+    "Ikram Aliskerov",
     "Christian Leroy Duncan",
     "Bo Nickal",
-    "Paulo Costa",
-    "Ikram Aliskerov",
+    "Israel Adesanya",
+    "Jared Cannonier",
+    "Roman Kopylov",
   ],
   "Light Heavyweight": [
     "Magomed Ankalaev",
-    "Alex Pereira",
     "Jiri Prochazka",
-    "Khalil Rountree Jr.",
-    "Jamahal Hill",
-    "Jan Blachowicz",
-    "Paulo Costa",
     "Dominick Reyes",
-    "Azamat Murzakanov",
+    "Khalil Rountree Jr.",
+    "Paulo Costa",
     "Volkan Oezdemir",
     "Bogdan Guskov",
+    "Azamat Murzakanov",
     "Dustin Jacoby",
-    "Johnny Walker",
-    "Alonzo Menifield",
+    "Jan Blachowicz",
     "Navajo Stirling",
+    "Alonzo Menifield",
+    "Johnny Walker",
+    "Jamahal Hill",
+    "Ibo Aslan",
   ],
   Heavyweight: [
     "Ciryl Gane",
+    "Alex Pereira",
     "Alexander Volkov",
     "Sergei Pavlovich",
-    "Curtis Blaydes",
-    "Rizvan Kuniev",
-    "Serghei Spivac",
-    "Waldo Cortes-Acosta",
     "Josh Hokit",
+    "Waldo Cortes-Acosta",
+    "Curtis Blaydes",
+    "Serghei Spivac",
     "Vitor Petrino",
-    "Tyrell Fortune",
-    "Ante Delija",
     "Valter Walker",
     "Brando Pericic",
+    "Rizvan Kuniev",
     "Mario Pinto",
     "Mick Parkin",
+    "Tyrell Fortune",
+  ],
+  "Women's Strawweight": [
+    "Zhang Weili",
+    "Tatiana Suarez",
+    "Virna Jandiroba",
+    "Gillian Robertson",
+    "Denise Gomes",
+    "Yan Xiaonan",
+    "Tabatha Ricci",
+    "Loopy Godinez",
+    "Jéssica Andrade",
+    "Alexia Thainara",
+    "Fatima Kline",
+    "Amanda Lemos",
+    "Mizuki",
+    "Angela Hill",
+    "Amanda Ribas",
+  ],
+  "Women's Flyweight": [
+    "Natalia Silva",
+    "Manon Fiorot",
+    "Erin Blanchfield",
+    "Alexa Grasso",
+    "Rose Namajunas",
+    "Jasmine Jasudavicius",
+    "Maycee Barber",
+    "Miranda Maverick",
+    "Casey O'Neill",
+    "Wang Cong",
+    "Eduarda Moura",
+    "JJ Aldrich",
+    "Karine Silva",
+    "Tracy Cortez",
+    "Gabriella Fernandes",
+  ],
+  "Women's Bantamweight": [
+    "Ailin Perez",
+    "Joselyne Edwards",
+    "Luana Santos",
+    "Yana Santos",
+    "Julianna Peña",
+    "Norma Dumont",
+    "Bia Mesquita",
+    "Melissa Croden",
+    "Jacqueline Cavalcanti",
+    "Raquel Pennington",
+    "Michelle Montague",
+    "Karol Rosa",
+    "Macy Chiasson",
+    "Irene Aldana",
+    "Daria Zhelezniakova",
   ],
 };
+
+const confidenceLevelCopy = {
+  fragile: {
+    label: "Fragile",
+    shortLabel: "Fragile",
+    detail: "Small component changes can move this ranking multiple spots.",
+  },
+  virtual_tie: {
+    label: "Virtual tie",
+    shortLabel: "Tie",
+    detail: "Adjacent final scores are within the model's virtual-tie band.",
+  },
+  close: {
+    label: "Close",
+    shortLabel: "Close",
+    detail: "The fighter is separated, but still inside a close-score band.",
+  },
+  clear: {
+    label: "Clear separation",
+    shortLabel: "Clear",
+    detail: "Nearest adjacent score gap is outside the close-score band.",
+  },
+};
+
+const ourConfidenceOverrides = buildConfidenceOverrides([
+  {
+    division: "Light Heavyweight",
+    level: "fragile",
+    fighters: ["Khalil Rountree Jr.", "Bogdan Guskov"],
+    detail: "Part of the LHW 5-9 uncertainty band and sensitive to recent-form tuning.",
+  },
+  {
+    division: "Light Heavyweight",
+    level: "virtual_tie",
+    fighters: ["Paulo Costa", "Volkan Oezdemir", "Jan Blachowicz", "Navajo Stirling"],
+    detail: "Adjacent LHW scores are nearly identical, so the exact order is low-confidence.",
+  },
+  {
+    division: "Light Heavyweight",
+    level: "close",
+    fighters: ["Azamat Murzakanov", "Alonzo Menifield"],
+    detail: "Inside a close LHW band, but not as compressed as the virtual-tie slots.",
+  },
+  {
+    division: "Lightweight",
+    level: "virtual_tie",
+    fighters: [
+      "Ilia Topuria",
+      "Arman Tsarukyan",
+      "Max Holloway",
+      "Mateusz Gamrot",
+      "Quillan Salkilld",
+      "Renato Moicano",
+      "Paddy Pimblett",
+      "Mauricio Ruffy",
+    ],
+    detail: "This lightweight cluster is close enough that one-rank movement should not be over-read.",
+  },
+  {
+    division: "Lightweight",
+    level: "close",
+    fighters: ["Charles Oliveira"],
+    detail: "Separated from Arman, but still inside the close-score band.",
+  },
+  {
+    division: "Welterweight",
+    level: "virtual_tie",
+    fighters: [
+      "Ian Machado Garry",
+      "Carlos Prates",
+      "Sean Brady",
+      "Jack Della Maddalena",
+      "Kamaru Usman",
+      "Joaquin Buckley",
+      "Belal Muhammad",
+      "Uros Medic",
+      "Mike Malott",
+    ],
+    detail: "The model score gap to an adjacent welterweight is within the virtual-tie threshold.",
+  },
+  {
+    division: "Welterweight",
+    level: "close",
+    fighters: ["Daniel Rodriguez", "Yaroslav Amosov"],
+    detail: "Close-score welterweight ordering; stronger evidence is needed before treating the gap as decisive.",
+  },
+  {
+    division: "Middleweight",
+    level: "virtual_tie",
+    fighters: [
+      "Khamzat Chimaev",
+      "Nassourdine Imavov",
+      "Anthony Hernandez",
+      "Brendan Allen",
+      "Caio Borralho",
+      "Reinier De Ridder",
+    ],
+    detail: "Adjacent middleweight scores are inside the virtual-tie threshold.",
+  },
+  {
+    division: "Middleweight",
+    level: "close",
+    fighters: ["Joe Pyfer", "Gregory Rodrigues"],
+    detail: "Close-score middleweight ordering with a narrow adjacent gap.",
+  },
+  {
+    division: "Featherweight",
+    level: "fragile",
+    fighters: ["Arnold Allen"],
+    detail: "Part of the featherweight 3-7 band and sensitive to recent-form tuning.",
+  },
+  {
+    division: "Featherweight",
+    level: "virtual_tie",
+    fighters: [
+      "Lerone Murphy",
+      "Diego Lopes",
+      "Jean Silva",
+      "Aljamain Sterling",
+      "Nathaniel Wood",
+      "Pat Sabatini",
+      "Steve Garcia",
+      "Kevin Vallejos",
+      "Youssef Zalal",
+    ],
+    detail: "Featherweight scores are packed tightly enough to treat the exact order as provisional.",
+  },
+  {
+    division: "Featherweight",
+    level: "close",
+    fighters: ["Yair Rodriguez", "Melquizael Costa"],
+    detail: "Close-score featherweight ordering outside the virtual-tie threshold.",
+  },
+  {
+    division: "Women's Flyweight",
+    level: "fragile",
+    fighters: ["Alexa Grasso"],
+    detail: "Part of the women's flyweight 5-8 band and sensitive to recent-form tuning.",
+  },
+  {
+    division: "Women's Flyweight",
+    level: "virtual_tie",
+    fighters: ["Rose Namajunas", "Jasmine Jasudavicius", "Maycee Barber", "Eduarda Moura", "JJ Aldrich"],
+    detail: "Adjacent women's flyweight scores are inside the virtual-tie threshold.",
+  },
+  {
+    division: "Women's Flyweight",
+    level: "close",
+    fighters: ["Karine Silva", "Tracy Cortez"],
+    detail: "Close-score women's flyweight ordering outside the virtual-tie threshold.",
+  },
+]);
 
 function buildRankingSource(overrides = {}) {
   return metaBoardDivisions.map((division) => ({
@@ -793,7 +996,30 @@ function seedValue(name, rank, offset = 0) {
   return total + rank * 17 + offset;
 }
 
-function makeProfile(name, division, rank = 0, isChampion = false) {
+function buildConfidenceOverrides(groups) {
+  return groups.reduce((byDivision, group) => {
+    byDivision[group.division] ??= {};
+    for (const fighter of group.fighters) {
+      byDivision[group.division][fighter] = {
+        ...confidenceLevelCopy[group.level],
+        level: group.level,
+        detail: group.detail ?? confidenceLevelCopy[group.level].detail,
+      };
+    }
+    return byDivision;
+  }, {});
+}
+
+function getRankingConfidence(source, division, name, isChampion = false) {
+  if (source !== "ours" || isChampion) return null;
+  return {
+    ...confidenceLevelCopy.clear,
+    level: "clear",
+    ...(ourConfidenceOverrides[division]?.[name] ?? {}),
+  };
+}
+
+function makeProfile(name, division, rank = 0, isChampion = false, confidence = null) {
   const override = profileOverrides[name] ?? {};
   const seed = seedValue(name, rank || 1);
   const wins = override.wins ?? Math.max(10, 28 - Math.min(rank, 14) + (seed % 5));
@@ -815,6 +1041,7 @@ function makeProfile(name, division, rank = 0, isChampion = false) {
     koTko,
     submissions,
     score,
+    confidence,
     recordLine:
       override.recordLine ??
       (isChampion
@@ -843,10 +1070,18 @@ export default function App() {
 
   const flattenedAthletes = useMemo(() => {
     return activeSource.divisions.flatMap((division) => [
-      makeProfile(division.champion, division.division, 0, true),
-      ...division.rankings.map((name, index) => makeProfile(name, division.division, index + 1, false)),
+      makeProfile(
+        division.champion,
+        division.division,
+        0,
+        true,
+        getRankingConfidence(rankingSource, division.division, division.champion, true),
+      ),
+      ...division.rankings.map((name, index) =>
+        makeProfile(name, division.division, index + 1, false, getRankingConfidence(rankingSource, division.division, name)),
+      ),
     ]);
-  }, [activeSource]);
+  }, [activeSource, rankingSource]);
 
   function openAthlete(profile) {
     setSelectedAthlete(profile);
@@ -973,15 +1208,21 @@ function RankingBoard({ divisions, source, onSourceChange, onSelect }) {
 
       <div className="division-grid">
         {divisions.map((division) => (
-          <DivisionColumn key={division.division} division={division} onSelect={onSelect} />
+          <DivisionColumn key={division.division} division={division} source={source} onSelect={onSelect} />
         ))}
       </div>
     </motion.section>
   );
 }
 
-function DivisionColumn({ division, onSelect }) {
-  const champion = makeProfile(division.champion, division.division, 0, true);
+function DivisionColumn({ division, source, onSelect }) {
+  const champion = makeProfile(
+    division.champion,
+    division.division,
+    0,
+    true,
+    getRankingConfidence(source, division.division, division.champion, true),
+  );
 
   return (
     <section className="division-card" aria-label={`${division.division} rankings`}>
@@ -994,12 +1235,18 @@ function DivisionColumn({ division, onSelect }) {
 
       <ol className="ranking-list">
         {division.rankings.map((name, index) => {
-          const athlete = makeProfile(name, division.division, index + 1, false);
+          const confidence = getRankingConfidence(source, division.division, name);
+          const athlete = makeProfile(name, division.division, index + 1, false, confidence);
           return (
             <li key={athlete.id}>
               <button type="button" onClick={() => onSelect(athlete)}>
                 <span>{index + 1}</span>
                 <strong>{name}</strong>
+                {confidence && (
+                  <em className={`confidence-badge ${confidence.level}`} title={confidence.detail}>
+                    {confidence.shortLabel}
+                  </em>
+                )}
               </button>
             </li>
           );
@@ -1056,7 +1303,15 @@ function AthleteProfile({ athlete, sourceLabel, onBack }) {
             <span>OctagonRank score</span>
             <strong>{athlete.score}</strong>
           </div>
-          <p>{athlete.recordLine}</p>
+          <div className="profile-copy">
+            <p>{athlete.recordLine}</p>
+            {athlete.confidence && (
+              <div className={`profile-confidence ${athlete.confidence.level}`}>
+                <strong>{athlete.confidence.label}</strong>
+                <span>{athlete.confidence.detail}</span>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="stat-grid" aria-label={`${athlete.name} stats`}>

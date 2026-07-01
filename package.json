@@ -11,6 +11,7 @@
     "model:rankings": "node scripts/build-rankings-model.mjs",
     "model:audit": "node scripts/audit-rankings.mjs",
     "model:review": "node scripts/review-audit.mjs",
+    "model:bands": "node scripts/score-bands.mjs",
     "model:backtest": "node scripts/backtest-model.mjs",
     "model:diagnostics": "node scripts/diagnose-model.mjs",
     "model:tune": "node scripts/tune-model.mjs",

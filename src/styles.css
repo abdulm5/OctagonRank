@@ -344,8 +344,9 @@ button {
 
 .ranking-list button {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
+  gap: 8px;
   width: 100%;
   min-height: 28px;
   padding: 0;
@@ -376,6 +377,41 @@ button {
   text-overflow: ellipsis;
   transition: color 160ms ease, transform 160ms ease;
   white-space: nowrap;
+}
+
+.confidence-badge {
+  justify-self: end;
+  min-width: 34px;
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.52rem;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.confidence-badge.virtual_tie,
+.profile-confidence.virtual_tie {
+  border-color: var(--ufc-red);
+  color: var(--ufc-red);
+}
+
+.confidence-badge.close,
+.profile-confidence.close {
+  border-color: #a66a00;
+  color: #8a5700;
+}
+
+.confidence-badge.fragile,
+.profile-confidence.fragile {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .profile-page {
@@ -497,15 +533,47 @@ button {
   line-height: 0.9;
 }
 
-.profile-summary p {
-  display: flex;
-  align-items: center;
-  margin: 0;
+.profile-copy {
+  display: grid;
+  align-content: center;
+  gap: 14px;
   padding: 24px;
+}
+
+.profile-summary p {
+  margin: 0;
   color: var(--text);
   font-size: 1.1rem;
   font-weight: 800;
   line-height: 1.55;
+}
+
+.profile-confidence {
+  display: inline-grid;
+  gap: 5px;
+  justify-self: start;
+  max-width: 520px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+}
+
+.profile-confidence strong {
+  color: inherit;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-confidence span {
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.profile-confidence.fragile span {
+  color: #d7d7d7;
 }
 
 .stat-grid {

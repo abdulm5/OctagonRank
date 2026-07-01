@@ -10,7 +10,7 @@ const COMPLETED_EVENTS_URL = `${BASE_URL}/statistics/events/completed?page=all`;
 
 const DEFAULTS = {
   startDate: "2000-01-01",
-  endDate: "2026-06-24",
+  endDate: "2026-06-30",
   outDir: "data/ufcstats",
   concurrency: 4,
   delayMs: 125,
