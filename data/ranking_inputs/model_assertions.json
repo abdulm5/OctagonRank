@@ -1,5 +1,5 @@
 {
-  "version": "v0.1",
+  "version": "v0.2",
   "description": "High-signal ranking relationships used as regression tests for model tuning.",
   "assertions": [
     {
@@ -25,10 +25,45 @@
     },
     {
       "division": "Light Heavyweight",
+      "type": "above",
+      "fighter": "Khalil Rountree Jr.",
+      "other": "Azamat Murzakanov",
+      "rationale": "Rountree should not fall behind Azamat on a recent-form tweak alone because the LHW 5-9 cluster is already a high-risk close-score band."
+    },
+    {
+      "division": "Light Heavyweight",
+      "type": "rank_at_most",
+      "fighter": "Khalil Rountree Jr.",
+      "rank": 6,
+      "rationale": "Rountree's title-lineage and snapshot support should keep him near the top-five edge unless new fight data changes the division."
+    },
+    {
+      "division": "Light Heavyweight",
       "type": "rank_at_least",
       "fighter": "Dustin Jacoby",
       "rank": 6,
       "rationale": "Jacoby should not be top five unless future data adds stronger elite or snapshot support."
+    },
+    {
+      "division": "Light Heavyweight",
+      "type": "above",
+      "fighter": "Jamahal Hill",
+      "other": "Ibo Aslan",
+      "rationale": "Hill should not disappear below low-context LHW entries while he still has recent elite/title-level division context."
+    },
+    {
+      "division": "Light Heavyweight",
+      "type": "rank_at_most",
+      "fighter": "Jamahal Hill",
+      "rank": 15,
+      "rationale": "Hill should remain inside the ranked LHW pool unless future results or inactivity make the drop explicit."
+    },
+    {
+      "division": "Light Heavyweight",
+      "type": "above",
+      "fighter": "Volkan Oezdemir",
+      "other": "Bogdan Guskov",
+      "rationale": "Volkan's stronger established contender resume should break close-score ties against Guskov unless Guskov adds a stronger elite win."
     },
     {
       "division": "Lightweight",
@@ -39,6 +74,20 @@
     },
     {
       "division": "Lightweight",
+      "type": "rank_at_most",
+      "fighter": "Ilia Topuria",
+      "rank": 2,
+      "rationale": "A recent champion who lost the belt should be treated as the top contender tier, not a normal ranked contender."
+    },
+    {
+      "division": "Lightweight",
+      "type": "above",
+      "fighter": "Ilia Topuria",
+      "other": "Charles Oliveira",
+      "rationale": "Topuria's recent title context should keep him above older former-title context unless direct results change that ordering."
+    },
+    {
+      "division": "Lightweight",
       "type": "above",
       "fighter": "Arman Tsarukyan",
       "other": "Charles Oliveira",
@@ -46,10 +95,24 @@
     },
     {
       "division": "Lightweight",
+      "type": "above",
+      "fighter": "Charles Oliveira",
+      "other": "Benoit Saint Denis",
+      "rationale": "Charles should keep stronger elite/title resume separation over BSD unless BSD adds another elite lightweight win."
+    },
+    {
+      "division": "Lightweight",
       "type": "rank_at_most",
       "fighter": "Max Holloway",
       "rank": 8,
       "rationale": "Elite resume and recent high-value wins should keep Holloway in the upper top ten."
+    },
+    {
+      "division": "Lightweight",
+      "type": "above",
+      "fighter": "Max Holloway",
+      "other": "Quillan Salkilld",
+      "rationale": "Holloway's long elite resume and high-value lightweight wins should not be outweighed by a thinner prospect sample."
     },
     {
       "division": "Lightweight",
@@ -67,6 +130,13 @@
       "rationale": "Paddy should get credit for dominant wins but should not be boosted into the title tier."
     },
     {
+      "division": "Lightweight",
+      "type": "above",
+      "fighter": "Paddy Pimblett",
+      "other": "Tom Nolan",
+      "rationale": "Paddy's dominant ranked-profile wins should keep him above thinner lightweight samples even with schedule-quality penalties."
+    },
+    {
       "division": "Welterweight",
       "type": "exact_rank",
       "fighter": "Islam Makhachev",
@@ -82,10 +152,31 @@
     },
     {
       "division": "Welterweight",
+      "type": "above",
+      "fighter": "Carlos Prates",
+      "other": "Michael Morales",
+      "rationale": "Prates has stronger recent opponent-quality context and should not fall behind Morales on undefeated-sample value alone."
+    },
+    {
+      "division": "Welterweight",
       "type": "rank_at_most",
       "fighter": "Jack Della Maddalena",
       "rank": 8,
       "rationale": "Recent champion/title context should keep JDM in the top eight."
+    },
+    {
+      "division": "Welterweight",
+      "type": "rank_at_most",
+      "fighter": "Jack Della Maddalena",
+      "rank": 6,
+      "rationale": "JDM's recent champion/title context should keep him in the top-six contender range."
+    },
+    {
+      "division": "Welterweight",
+      "type": "above",
+      "fighter": "Jack Della Maddalena",
+      "other": "Kamaru Usman",
+      "rationale": "JDM's fresher title context should beat Usman's legacy value unless Usman adds new elite wins."
     },
     {
       "division": "Middleweight",
@@ -102,11 +193,32 @@
       "rationale": "Khamzat's title-lineage context should keep him near the top contender tier."
     },
     {
+      "division": "Middleweight",
+      "type": "above",
+      "fighter": "Khamzat Chimaev",
+      "other": "Nassourdine Imavov",
+      "rationale": "Khamzat's title-lineage context should keep him above nearby non-title contenders unless new direct results change the relationship."
+    },
+    {
       "division": "Heavyweight",
       "type": "rank_at_most",
       "fighter": "Alex Pereira",
       "rank": 5,
       "rationale": "Pereira's transferred elite light-heavyweight resume should keep him in the heavyweight top five."
+    },
+    {
+      "division": "Heavyweight",
+      "type": "rank_at_most",
+      "fighter": "Alex Pereira",
+      "rank": 3,
+      "rationale": "Pereira's dominant transferred LHW resume and heavyweight title-opponent context should keep him in the immediate heavyweight contender tier."
+    },
+    {
+      "division": "Heavyweight",
+      "type": "above",
+      "fighter": "Alex Pereira",
+      "other": "Alexander Volkov",
+      "rationale": "Pereira's cross-division elite title resume should break close heavyweight score ties against Volkov."
     }
   ]
 }
