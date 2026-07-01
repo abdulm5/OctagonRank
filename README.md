@@ -180,6 +180,19 @@ audit, backtest, diagnostics, and ranking assertions for each one. It writes
 `data/model/tuning_report.json` and `data/model/tuning_report.md`; generated
 tuning runs stay under `data/model/tuning_runs/` and are ignored by git.
 
+Compare a baseline model against a tuning candidate:
+
+```bash
+npm run model:compare
+```
+
+The comparison report defaults to `baseline` versus `more_recent_form`. It
+rebuilds both runs, then writes `data/model/model_comparison.json` and
+`data/model/model_comparison.md` with validation deltas, assertion regressions,
+risk flags, biggest rank movers, new ranked fighters, removed ranked fighters,
+and division-level movement summaries. Use this before promoting a tuned
+candidate to the default formula.
+
 Check ranking regression assertions:
 
 ```bash

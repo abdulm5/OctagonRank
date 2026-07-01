@@ -14,6 +14,7 @@
     "model:bands": "node scripts/score-bands.mjs",
     "model:backtest": "node scripts/backtest-model.mjs",
     "model:history": "node scripts/rank-history.mjs",
+    "model:compare": "node scripts/compare-model-runs.mjs",
     "model:diagnostics": "node scripts/diagnose-model.mjs",
     "model:tune": "node scripts/tune-model.mjs",
     "model:explain": "node scripts/explain-rankings.mjs",
