@@ -27,6 +27,7 @@ implemented upgrades:
 - `data/ranking_inputs/current_division_snapshot.json`
 - `data/ranking_inputs/title_context.json`
 - `data/ranking_inputs/division_context.json`
+- `data/ranking_inputs/model_assertions.json`
 
 ## Added Logic
 
@@ -115,6 +116,12 @@ with a recent win is only narrowly behind lower-snapshot fighters. This keeps
 the current snapshot from being ignored in close-score cases without forcing
 the entire official order.
 
+`model_assertions`
+: Runs source-controlled regression checks for important ranking relationships.
+These are not the full ranking order; they are high-signal guardrails for cases
+we have already reviewed, such as Paulo Costa staying above lower-snapshot LHW
+contenders and direct head-to-head relationships not silently regressing.
+
 ## Commands
 
 ```bash
@@ -125,6 +132,7 @@ npm run model:backtest
 npm run model:diagnostics
 npm run model:tune
 npm run model:explain
+npm run model:assertions
 ```
 
 Current generated outputs:

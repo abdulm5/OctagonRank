@@ -1,0 +1,105 @@
+{
+  "version": "v0.1",
+  "description": "High-signal ranking relationships used as regression tests for model tuning.",
+  "assertions": [
+    {
+      "division": "Light Heavyweight",
+      "type": "above",
+      "fighter": "Paulo Costa",
+      "other": "Volkan Oezdemir",
+      "rationale": "Costa is higher in the current snapshot and has a recent LHW win; he should not fall behind lower-snapshot veterans on a close score."
+    },
+    {
+      "division": "Light Heavyweight",
+      "type": "above",
+      "fighter": "Paulo Costa",
+      "other": "Bogdan Guskov",
+      "rationale": "Costa's snapshot support and recent Azamat win should beat Guskov's weaker recent-opponent-quality streak."
+    },
+    {
+      "division": "Light Heavyweight",
+      "type": "above",
+      "fighter": "Khalil Rountree Jr.",
+      "other": "Dustin Jacoby",
+      "rationale": "Rountree has stronger snapshot/title-lineage context; Jacoby's recent streak should not push him above Rountree."
+    },
+    {
+      "division": "Light Heavyweight",
+      "type": "rank_at_least",
+      "fighter": "Dustin Jacoby",
+      "rank": 6,
+      "rationale": "Jacoby should not be top five unless future data adds stronger elite or snapshot support."
+    },
+    {
+      "division": "Lightweight",
+      "type": "rank_at_most",
+      "fighter": "Ilia Topuria",
+      "rank": 3,
+      "rationale": "Recent title-level context should keep Topuria in the top three."
+    },
+    {
+      "division": "Lightweight",
+      "type": "above",
+      "fighter": "Arman Tsarukyan",
+      "other": "Charles Oliveira",
+      "rationale": "Recent head-to-head and contender context should keep Arman above Charles."
+    },
+    {
+      "division": "Lightweight",
+      "type": "rank_at_most",
+      "fighter": "Max Holloway",
+      "rank": 8,
+      "rationale": "Elite resume and recent high-value wins should keep Holloway in the upper top ten."
+    },
+    {
+      "division": "Lightweight",
+      "type": "rank_between",
+      "fighter": "Paddy Pimblett",
+      "min_rank": 8,
+      "max_rank": 12,
+      "rationale": "Paddy should get credit for dominant wins but should not be boosted into the title tier."
+    },
+    {
+      "division": "Welterweight",
+      "type": "exact_rank",
+      "fighter": "Islam Makhachev",
+      "rank": 1,
+      "rationale": "Islam is the current welterweight champion in the snapshot."
+    },
+    {
+      "division": "Welterweight",
+      "type": "above",
+      "fighter": "Ian Machado Garry",
+      "other": "Carlos Prates",
+      "rationale": "Recent head-to-head should keep Garry above Prates unless future results change the relationship."
+    },
+    {
+      "division": "Welterweight",
+      "type": "rank_at_most",
+      "fighter": "Jack Della Maddalena",
+      "rank": 8,
+      "rationale": "Recent champion/title context should keep JDM in the top eight."
+    },
+    {
+      "division": "Middleweight",
+      "type": "exact_rank",
+      "fighter": "Sean Strickland",
+      "rank": 1,
+      "rationale": "Strickland is the current middleweight champion in the snapshot."
+    },
+    {
+      "division": "Middleweight",
+      "type": "rank_at_most",
+      "fighter": "Khamzat Chimaev",
+      "rank": 3,
+      "rationale": "Khamzat's title-lineage context should keep him near the top contender tier."
+    },
+    {
+      "division": "Heavyweight",
+      "type": "rank_at_most",
+      "fighter": "Alex Pereira",
+      "rank": 5,
+      "rationale": "Pereira's transferred elite light-heavyweight resume should keep him in the heavyweight top five."
+    }
+  ]
+}

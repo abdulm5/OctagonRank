@@ -150,6 +150,17 @@ audit, backtest, and diagnostics for each one. It writes
 `data/model/tuning_report.json` and `data/model/tuning_report.md`; generated
 tuning runs stay under `data/model/tuning_runs/` and are ignored by git.
 
+Check ranking regression assertions:
+
+```bash
+npm run model:assertions
+```
+
+Assertions live in `data/ranking_inputs/model_assertions.json`. They guard
+high-signal relationships such as Paulo Costa staying above lower-snapshot LHW
+contenders, Islam remaining welterweight #1, and head-to-head relationships
+that should not regress during tuning.
+
 ## Project Status
 
 This is an early frontend and modeling prototype. The frontend still uses
