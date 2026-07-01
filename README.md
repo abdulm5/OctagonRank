@@ -61,6 +61,8 @@ division moves, and major layoffs.
 Title-lineage policy context lives in `data/ranking_inputs/title_context.json`.
 This small manual input handles cases like recent title losers, former
 champions, and interim champions without hiding the adjustment in the score.
+Entries can also cap their rank-policy adjustment, which keeps narrow
+title-lineage protections from turning into broad manual boosts.
 
 Current-division movement context lives in
 `data/ranking_inputs/division_context.json`. This source-backed file removes
@@ -135,6 +137,12 @@ January 1, 2024, then reports accuracy, Brier score, log loss, calibration
 error, favorite-confidence buckets, division slices, year slices, method
 validation, and ranked/title-context proxy performance.
 
+Pre-fight win probability is context-aware: the model records both the raw Elo
+expectation and the context-adjusted expectation after age, recent form,
+activity, title-lineage, and elite-resume context are applied. Fight-impact rows
+include the contextual rating gap and the adjustment reasons so the prediction
+can be explained later in the frontend.
+
 Generate historical ranking movement:
 
 ```bash
@@ -193,6 +201,13 @@ rebuilds both runs, then writes `data/model/model_comparison.json` and
 risk flags, biggest rank movers, new ranked fighters, removed ranked fighters,
 and division-level movement summaries. Use this before promoting a tuned
 candidate to the default formula.
+
+To compare the current context-aware engine against the older raw pre-fight Elo
+expectation, run:
+
+```bash
+npm run model:compare -- --baseline=no_pre_fight_context --candidate=baseline --no-keep-runs
+```
 
 Check ranking regression assertions:
 

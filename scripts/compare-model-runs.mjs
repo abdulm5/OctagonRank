@@ -26,6 +26,9 @@ const PRESETS = {
   more_elite_resume: { name: "more_elite_resume", weights: { elite_resume: 1.12, opponent_elite_resume: 1.08 }, cli: {} },
   less_schedule_strength: { name: "less_schedule_strength", weights: { schedule_strength: 0.85 }, cli: {} },
   more_schedule_strength: { name: "more_schedule_strength", weights: { schedule_strength: 1.12 }, cli: {} },
+  no_pre_fight_context: { name: "no_pre_fight_context", weights: { pre_fight_context: 0 }, cli: {} },
+  less_pre_fight_context: { name: "less_pre_fight_context", weights: { pre_fight_context: 0.65 }, cli: {} },
+  more_pre_fight_context: { name: "more_pre_fight_context", weights: { pre_fight_context: 1.25 }, cli: {} },
   less_recent_form: { name: "less_recent_form", weights: { recent_form: 0.9, recent_outcome: 0.9 }, cli: {} },
   more_recent_form: { name: "more_recent_form", weights: { recent_form: 1.1, recent_outcome: 1.05 }, cli: {} },
   conservative_policy: { name: "conservative_policy", weights: { current_context_prior: 0.95, rank_guard_strength: 0.85 }, cli: {} },
@@ -204,6 +207,7 @@ function summarizeRun({ audit, backtest, diagnostics, assertions, scoreBands }) 
     ranked_proxy_accuracy: num(contextBuckets.get("ranked_rating_proxy")?.accuracy),
     elite_proxy_accuracy: num(contextBuckets.get("elite_rating_proxy")?.accuracy),
     title_context_accuracy: num(contextBuckets.get("title_context_win_sample")?.accuracy),
+    title_context_fight_accuracy: num(contextBuckets.get("title_context_fight")?.accuracy),
     hard_audit_failures:
       num(auditSummary.champion_failures) +
       num(auditSummary.title_context_failures) +

@@ -49,7 +49,8 @@ function buildBacktest({ fightImpacts, rankings, since }) {
     .filter((impact) => impact.event_date >= since)
     .filter((impact) => Number.isFinite(num(impact.winner_pre_rating)) && Number.isFinite(num(impact.loser_pre_rating)))
     .map((impact) => {
-      const ratingGap = round(num(impact.winner_pre_rating) - num(impact.loser_pre_rating), 2);
+      const rawRatingGap = round(num(impact.winner_pre_rating) - num(impact.loser_pre_rating), 2);
+      const ratingGap = round(num(impact.contextual_rating_gap ?? rawRatingGap), 2);
       const expectedWinner = clamp(num(impact.expected_winner), 0.001, 0.999);
       const predictedWinnerWon = expectedWinner >= 0.5;
       const favoriteProbability = round(Math.max(expectedWinner, 1 - expectedWinner), 4);
@@ -58,6 +59,7 @@ function buildBacktest({ fightImpacts, rankings, since }) {
       return {
         ...impact,
         rating_gap: ratingGap,
+        raw_rating_gap: rawRatingGap,
         expected_winner_probability: expectedWinner,
         favorite_probability: favoriteProbability,
         favorite_name: favoriteName,
@@ -102,6 +104,7 @@ function buildBacktest({ fightImpacts, rankings, since }) {
       winner_pre_rating: impact.winner_pre_rating,
       loser_pre_rating: impact.loser_pre_rating,
       rating_gap: impact.rating_gap,
+      raw_rating_gap: impact.raw_rating_gap,
       favorite_probability: impact.favorite_probability,
       brier_score: impact.brier_score,
       log_loss: impact.log_loss,
@@ -213,6 +216,11 @@ function buildFightContextBuckets(rows) {
       key: "title_context_win_sample",
       label: "Winner beat title-context opponent",
       test: (row) => String(row.opponent_context_reason ?? "").includes("title_context"),
+    },
+    {
+      key: "title_context_fight",
+      label: "Fight involved title-context fighter",
+      test: (row) => Boolean(row.winner_title_context || row.loser_title_context),
     },
     {
       key: "thin_or_debut_level",

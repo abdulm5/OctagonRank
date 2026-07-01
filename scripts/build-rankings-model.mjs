@@ -53,6 +53,7 @@ const DEFAULT_MODEL_CONFIG = {
     current_context_prior: 1,
     rank_guard_strength: 1,
     opponent_elite_resume: 1,
+    pre_fight_context: 1,
     top_contender_credibility: 1,
     snapshot_order: 1,
   },
@@ -296,11 +297,13 @@ async function main() {
       head_to_head_score_window: HEAD_TO_HEAD_SCORE_WINDOW,
       score_band_tie_threshold: SCORE_BAND_TIE_THRESHOLD,
       score_band_close_threshold: SCORE_BAND_CLOSE_THRESHOLD,
+      pre_fight_context_weight: args.modelConfig.weights.pre_fight_context,
     },
     methodology: {
       base_rating: "Division-specific Elo rating updated chronologically after each fight.",
       opponent_strength: "Built into Elo: beating a higher-rated opponent creates a larger rating gain.",
       opponent_context: "Opponent quality is adjusted at fight time using age, recent form, recent activity, and losing streak context.",
+      pre_fight_context: "Expected win probability uses transparent pre-fight rating adjustments for age/form, title context, and elite-resume context before Elo updates are applied.",
       method_multiplier: "Finishes and clean decisions move ratings more than split decisions, DQs, or weird stoppages.",
       dominance_multiplier: "Significant strike differential, knockdowns, takedowns, control time, and submission attempts adjust the size of the update.",
       round_dominance: "Per-round stats add a separate dominance score and dampen late comeback finishes when the winner was losing the round profile.",
@@ -391,7 +394,26 @@ function processFight({
 
   const winnerPreRating = winner.rating;
   const loserPreRating = loser.rating;
-  const expectedWinner = expectedScore(winnerPreRating, loserPreRating);
+  const winnerPreFightContext = calculatePreFightRatingContext({
+    fighter: winner,
+    fighterCareerStates: getCareerFighterStates(divisionRatings, winnerName),
+    fighterProfile: fighterProfiles.get(winnerId),
+    fighterTitleContexts: titleContextByFighter.get(normalizeName(winnerName)) ?? [],
+    modelConfig,
+    fightDate: fight.event_date,
+    preRating: winnerPreRating,
+  });
+  const loserPreFightContext = calculatePreFightRatingContext({
+    fighter: loser,
+    fighterCareerStates: getCareerFighterStates(divisionRatings, loserName),
+    fighterProfile: fighterProfiles.get(loserId),
+    fighterTitleContexts: titleContextByFighter.get(normalizeName(loserName)) ?? [],
+    modelConfig,
+    fightDate: fight.event_date,
+    preRating: loserPreRating,
+  });
+  const rawExpectedWinner = expectedScore(winnerPreRating, loserPreRating);
+  const expectedWinner = expectedScore(winnerPreFightContext.adjustedRating, loserPreFightContext.adjustedRating);
   const baseEloChange = args.kFactor * (1 - expectedWinner);
 
   const winnerStats = statsForFight?.get(winnerId);
@@ -471,7 +493,17 @@ function processFight({
     method: fight.method,
     winner_pre_rating: round(winnerPreRating, 2),
     loser_pre_rating: round(loserPreRating, 2),
+    raw_expected_winner: round(rawExpectedWinner, 4),
     expected_winner: round(expectedWinner, 4),
+    contextual_rating_gap: round(winnerPreFightContext.adjustedRating - loserPreFightContext.adjustedRating, 2),
+    winner_context_adjusted_pre_rating: winnerPreFightContext.adjustedRating,
+    loser_context_adjusted_pre_rating: loserPreFightContext.adjustedRating,
+    winner_pre_fight_context_adjustment: winnerPreFightContext.adjustment,
+    loser_pre_fight_context_adjustment: loserPreFightContext.adjustment,
+    winner_pre_fight_context_reason: winnerPreFightContext.reasons.join("|"),
+    loser_pre_fight_context_reason: loserPreFightContext.reasons.join("|"),
+    winner_title_context: winnerPreFightContext.titleContextTag,
+    loser_title_context: loserPreFightContext.titleContextTag,
     base_elo_change: round(baseEloChange, 2),
     method_multiplier: method.multiplier,
     method_reason: method.reason,
@@ -765,8 +797,9 @@ function buildCurrentSnapshotRankings({
   const headToHeadCandidates = applyHeadToHeadResolver(rankGuardCandidates, divisionName, fightImpacts, asOfDate);
   const snapshotOrderCandidates = applySnapshotOrderResolver(headToHeadCandidates, modelConfig, asOfDate);
   const finalPolicyCandidates = applyTitleContextPolicy(snapshotOrderCandidates, titleContextDivision, asOfDate);
+  const finalGuardedCandidates = applyTitleGuard(finalPolicyCandidates);
 
-  return finalPolicyCandidates
+  return finalGuardedCandidates
     .sort((a, b) => b.final_score - a.final_score)
     .map((fighter, index) => ({ ...fighter, rank: index + 1 }));
 }
@@ -810,11 +843,14 @@ function applyTitleContextPolicy(candidates, titleContextDivision, asOfDate) {
     const candidate = findCandidateByName(candidates, entry.fighter);
     if (!candidate || !isActiveTitleContext(entry, candidate, asOfDate)) continue;
 
+    const rankMargin = Number(entry.rank_margin);
+    const maxAdjustment = Number(entry.max_adjustment);
     const adjustment = applyMaxRankAdjustment({
       candidates,
       candidate,
       maxRank: entry.max_overall_rank,
-      margin: 1.5,
+      margin: Number.isFinite(rankMargin) ? rankMargin : 1.5,
+      maxAdjustment: Number.isFinite(maxAdjustment) ? maxAdjustment : null,
     });
     if (adjustment <= 0) continue;
 
@@ -1243,7 +1279,7 @@ function getSnapshotOrderTarget({ candidate, ranked, currentRank, guard, asOfDat
       if (hasRecentLossTo(candidate, blocker, asOfDate)) return false;
       return blocker.final_score - candidate.final_score <= guard.window;
     })
-    .at(-1)?.blocker;
+    .at(0)?.blocker;
 }
 
 function isLowerSnapshotBlocker(candidate, blocker) {
@@ -1335,7 +1371,7 @@ function hasDamagingLossAfter(candidate, date) {
   );
 }
 
-function applyMaxRankAdjustment({ candidates, candidate, maxRank, margin }) {
+function applyMaxRankAdjustment({ candidates, candidate, maxRank, margin, maxAdjustment = null }) {
   const ranked = sortCandidates(candidates);
   const currentRank = ranked.indexOf(candidate) + 1;
   if (currentRank > 0 && currentRank <= maxRank) return 0;
@@ -1343,7 +1379,8 @@ function applyMaxRankAdjustment({ candidates, candidate, maxRank, margin }) {
   const target = ranked[Math.min(maxRank - 1, ranked.length - 1)];
   if (!target || target === candidate) return 0;
 
-  const adjustment = round(target.final_score - candidate.final_score + margin, 2);
+  const rawAdjustment = round(target.final_score - candidate.final_score + margin, 2);
+  const adjustment = round(Number.isFinite(maxAdjustment) ? Math.min(rawAdjustment, maxAdjustment) : rawAdjustment, 2);
   if (adjustment <= 0) return 0;
 
   candidate.final_score = round(candidate.final_score + adjustment, 2);
@@ -2148,6 +2185,35 @@ function calculateOpponentContext({
     eliteResumeScore: eliteResume.score,
     eliteResumeTier: eliteResume.tier,
     reasons,
+  };
+}
+
+function calculatePreFightRatingContext({
+  fighter,
+  fighterCareerStates = [fighter],
+  fighterProfile,
+  fighterTitleContexts,
+  modelConfig,
+  fightDate,
+  preRating,
+}) {
+  const context = calculateOpponentContext({
+    opponent: fighter,
+    opponentCareerStates: fighterCareerStates,
+    opponentProfile: fighterProfile,
+    opponentTitleContexts: fighterTitleContexts,
+    modelConfig,
+    fightDate,
+    opponentPreRating: preRating,
+  });
+  const rawAdjustment = num(context.adjustedRating) - num(preRating);
+  const weightedAdjustment = rawAdjustment * getModelWeights(modelConfig).pre_fight_context;
+  const adjustment = round(clamp(weightedAdjustment, -75, 35), 2);
+
+  return {
+    ...context,
+    adjustment,
+    adjustedRating: round(num(preRating) + adjustment, 2),
   };
 }
 

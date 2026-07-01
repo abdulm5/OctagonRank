@@ -161,10 +161,12 @@
           "fighter": "Khalil Rountree Jr.",
           "tag": "recent_title_challenger",
           "event_date": "2024-10-05",
-          "max_overall_rank": 9,
+          "max_overall_rank": 6,
+          "rank_margin": 0.05,
+          "max_adjustment": 55,
           "protection_months": 30,
           "expires_after_loss": false,
-          "note": "Recent title challenger context plus the Jamahal Hill win keeps Rountree from falling behind weaker light heavyweight resumes, while still allowing the later Jiri loss to hold him outside the top five."
+          "note": "Recent title challenger context plus the Jamahal Hill win keeps Rountree around the top-six edge, while still allowing the later Jiri loss to keep him outside the top-five unless the score band is extremely tight."
         },
         {
           "fighter": "Jan Blachowicz",
