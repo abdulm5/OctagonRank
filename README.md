@@ -209,6 +209,19 @@ expectation, run:
 npm run model:compare -- --baseline=no_pre_fight_context --candidate=baseline --no-keep-runs
 ```
 
+Simulate a hypothetical fight result:
+
+```bash
+npm run model:simulate -- --division=Lightweight --winner="Arman Tsarukyan" --loser="Justin Gaethje" --method=Submission --round=3 --performance=clear --title-fight
+```
+
+The simulator reads `data/model/rankings.json`, applies a transparent
+single-fight projection, then writes `data/model/simulation.json` and
+`data/model/simulation.md`. It reports raw and context-adjusted win
+probability, method/performance multipliers, model-score movement, projected
+rank changes, close-score confidence, and champion-transfer policy when a
+champion loses. This is a snapshot projection, not a historical rebuild.
+
 Check ranking regression assertions:
 
 ```bash
