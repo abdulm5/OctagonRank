@@ -115,8 +115,9 @@ when recent form is not backed by elite resume, title-lineage wins, current
 snapshot support, or strong recent opponent quality.
 
 Close-score cases also use a visible snapshot-order tiebreaker so an active
-higher-snapshot contender with a recent win is not pushed below lower-snapshot
-fighters unless the model score gap is large enough to justify it.
+higher-snapshot contender with recent form or elite decision-loss context is
+not pushed below lower-snapshot fighters unless the model score gap is large
+enough to justify it.
 
 Run the first predictive backtest:
 

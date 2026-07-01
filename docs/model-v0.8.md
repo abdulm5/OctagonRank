@@ -112,9 +112,9 @@ unusually high contender slot.
 
 `snapshot_order`
 : Applies a small, visible tiebreaker when an active higher-snapshot contender
-with a recent win is only narrowly behind lower-snapshot fighters. This keeps
-the current snapshot from being ignored in close-score cases without forcing
-the entire official order.
+with recent form or elite decision-loss context is only narrowly behind
+lower-snapshot fighters. This keeps the current snapshot from being ignored in
+close-score cases without forcing the entire official order.
 
 `model_assertions`
 : Runs source-controlled regression checks for important ranking relationships.

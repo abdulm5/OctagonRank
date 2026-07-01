@@ -53,6 +53,13 @@
     },
     {
       "division": "Lightweight",
+      "type": "above",
+      "fighter": "Max Holloway",
+      "other": "Mateusz Gamrot",
+      "rationale": "Holloway's elite resume, current snapshot support, and high-value lightweight wins should win close-score tiebreakers over Gamrot."
+    },
+    {
+      "division": "Lightweight",
       "type": "rank_between",
       "fighter": "Paddy Pimblett",
       "min_rank": 8,

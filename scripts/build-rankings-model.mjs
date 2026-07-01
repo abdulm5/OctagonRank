@@ -1050,11 +1050,14 @@ function applySnapshotOrderResolver(candidates, modelConfig, asOfDate) {
     const currentRank = ranked.indexOf(candidate) + 1;
     if (currentRank > 0 && currentRank <= guard.maxRank) continue;
 
-    const target = ranked[Math.min(guard.maxRank - 1, ranked.length - 1)];
+    const target = getSnapshotOrderTarget({
+      candidate,
+      ranked,
+      currentRank,
+      guard,
+      asOfDate,
+    });
     if (!target || target === candidate) continue;
-
-    const blockers = ranked.slice(guard.maxRank - 1, currentRank - 1);
-    if (blockers.some((blocker) => hasRecentLossTo(candidate, blocker, asOfDate))) continue;
 
     const scoreGap = round(target.final_score - candidate.final_score, 2);
     if (scoreGap > guard.window) continue;
@@ -1076,6 +1079,41 @@ function applySnapshotOrderResolver(candidates, modelConfig, asOfDate) {
   return candidates;
 }
 
+function getSnapshotOrderTarget({ candidate, ranked, currentRank, guard, asOfDate }) {
+  const rankTarget = ranked[Math.min(guard.maxRank - 1, ranked.length - 1)];
+  const blockers = ranked.slice(guard.maxRank - 1, currentRank - 1);
+  if (
+    rankTarget &&
+    blockers.length > 0 &&
+    blockers.every((blocker) => isLowerSnapshotBlocker(candidate, blocker)) &&
+    !blockers.some((blocker) => hasRecentLossTo(candidate, blocker, asOfDate))
+  ) {
+    return rankTarget;
+  }
+
+  const candidateSnapshotRank = Number(candidate.current_snapshot_rank);
+  return ranked
+    .slice(0, currentRank - 1)
+    .map((blocker, index) => ({ blocker, rank: index + 1 }))
+    .filter(({ blocker }) => {
+      const blockerSnapshotRank = Number(blocker.current_snapshot_rank);
+      if (!Number.isFinite(blockerSnapshotRank) || blockerSnapshotRank <= candidateSnapshotRank) return false;
+      if (hasRecentLossTo(candidate, blocker, asOfDate)) return false;
+      return blocker.final_score - candidate.final_score <= guard.window;
+    })
+    .at(-1)?.blocker;
+}
+
+function isLowerSnapshotBlocker(candidate, blocker) {
+  if (blocker.current_status === "Champion") return false;
+
+  const candidateSnapshotRank = Number(candidate.current_snapshot_rank);
+  const blockerSnapshotRank = Number(blocker.current_snapshot_rank);
+  if (!Number.isFinite(candidateSnapshotRank) || candidateSnapshotRank <= 0) return false;
+  if (!Number.isFinite(blockerSnapshotRank) || blockerSnapshotRank <= 0) return true;
+  return blockerSnapshotRank > candidateSnapshotRank;
+}
+
 function getSnapshotOrderGuard(candidate, modelConfig) {
   if (candidate.current_status === "Champion") return null;
   if (num(candidate.entry_gate_penalty) > 0 || num(candidate.top_contender_credibility_penalty) > 0) return null;
@@ -1085,10 +1123,15 @@ function getSnapshotOrderGuard(candidate, modelConfig) {
 
   const latestFight = candidate.last_five?.[0];
   const recentRecord = parseRecord(candidate.recent_record_30m);
+  const eliteResumeScore = num(candidate.elite_resume_score);
   const hasRecentWin = latestFight?.result === "W";
   const hasPositiveRecentRecord = recentRecord.wins > recentRecord.losses;
+  const nonDamagingDecisionLoss =
+    latestFight?.result === "L" && !isFinish(latestFight.method) && num(latestFight.rating_change) > -18;
+  const hasEliteDecisionLossContext =
+    nonDamagingDecisionLoss && hasPositiveRecentRecord && snapshotRank <= 5 && eliteResumeScore >= 50;
   if (!hasRecentWin && !hasPositiveRecentRecord) return null;
-  if (latestFight?.result === "L") return null;
+  if (latestFight?.result === "L" && !hasEliteDecisionLossContext) return null;
 
   let maxRank = null;
   let window = 0;
@@ -1109,7 +1152,7 @@ function getSnapshotOrderGuard(candidate, modelConfig) {
     maxRank,
     window: round(window * weight, 2),
     maxAdjustment: round(window * weight + 0.1, 2),
-    reason: hasRecentWin ? "latest_win" : "positive_recent_record",
+    reason: hasRecentWin ? "latest_win" : hasEliteDecisionLossContext ? "elite_decision_loss_context" : "positive_recent_record",
   };
 }
 
