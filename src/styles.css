@@ -1,18 +1,26 @@
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Roboto+Condensed:wght@700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap");
 
 :root {
   color-scheme: light;
-  --ufc-red: #d20a0a;
-  --ink: #111111;
-  --text: #262626;
-  --muted: #7a7a7a;
-  --line: #dddddd;
-  --soft: #f6f6f6;
-  --canvas: #faf7ef;
-  --paper: #ffffff;
-  --green: #14844b;
-  --shadow: 0 26px 70px rgba(0, 0, 0, 0.09);
-  font-family: "Archivo", system-ui, sans-serif;
+  --ufc-red: #c91622;
+  --ink: #16191d;
+  --text: #303741;
+  --muted: #737d86;
+  --line: #d9dcd4;
+  --soft: #f0f2ec;
+  --canvas: #f7f7ef;
+  --paper: #fffefa;
+  --green: #2f7d55;
+  --teal: #2f6f73;
+  --amber: #b46a16;
+  --shadow: 0 18px 48px rgba(24, 30, 36, 0.08);
+  --shadow-card: 0 12px 34px rgba(24, 30, 36, 0.07);
+  --radius-panel: 8px;
+  --radius-control: 6px;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Inter", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", "Inter", monospace;
+  font-family: var(--font-body);
   font-synthesis: none;
   line-height: 1.45;
   text-rendering: optimizeLegibility;
@@ -23,11 +31,20 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   min-width: 320px;
   margin: 0;
   color: var(--text);
-  background: var(--canvas);
+  background:
+    linear-gradient(90deg, rgba(47, 111, 115, 0.04) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(47, 111, 115, 0.035) 1px, transparent 1px),
+    var(--canvas);
+  background-size: 72px 72px;
+  overflow-x: hidden;
 }
 
 button {
@@ -37,7 +54,9 @@ button {
 
 .page-shell {
   min-height: 100vh;
-  background: var(--canvas);
+  background:
+    linear-gradient(180deg, rgba(255, 254, 250, 0.78), rgba(247, 247, 239, 0.84) 42%, rgba(247, 247, 239, 0.96)),
+    transparent;
 }
 
 .site-header {
@@ -56,7 +75,7 @@ button {
   background: transparent;
   color: var(--paper);
   cursor: pointer;
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 900;
   letter-spacing: 0;
@@ -66,6 +85,11 @@ button {
 .site-header nav {
   display: flex;
   gap: 24px;
+  scrollbar-width: none;
+}
+
+.site-header nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-tab {
@@ -132,14 +156,14 @@ button {
 .profile-title h1 {
   margin: 0;
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .board-heading h1 {
-  font-size: clamp(1.55rem, 2.5vw, 2.35rem);
+  font-size: 2rem;
   line-height: 0.92;
 }
 
@@ -234,8 +258,8 @@ button {
   max-width: 210px;
   margin-top: 11px;
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
-  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  font-family: var(--font-display);
+  font-size: 1.65rem;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 0.88;
@@ -363,20 +387,81 @@ button {
 
 .ranking-list span {
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
+  font-family: var(--font-display);
   font-size: 0.8rem;
   font-weight: 900;
 }
 
 .ranking-list strong {
-  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  overflow: visible;
   color: var(--text);
   font-size: 0.76rem;
   font-weight: 650;
+  gap: 6px;
   line-height: 1.2;
-  text-overflow: ellipsis;
   transition: color 160ms ease, transform 160ms ease;
+}
+
+.ranking-name b {
+  min-width: 0;
+  overflow: hidden;
+  font: inherit;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.movement-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  gap: 4px;
+  padding: 0 1px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.movement-badge i {
+  width: 0;
+  height: 0;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+.movement-badge.up {
+  color: #7da91d;
+}
+
+.movement-badge.up i {
+  border-bottom: 6px solid currentColor;
+}
+
+.movement-badge.down {
+  color: var(--ufc-red);
+}
+
+.movement-badge.down i {
+  border-top: 6px solid currentColor;
+}
+
+.movement-badge.new {
+  min-width: 22px;
+  color: var(--ink);
+  font-size: 0.58rem;
+}
+
+.movement-badge.new i {
+  display: none;
 }
 
 .confidence-badge {
@@ -461,7 +546,7 @@ button {
 
 .profile-title h1 {
   max-width: 880px;
-  font-size: clamp(4.4rem, 11vw, 10rem);
+  font-size: 7.4rem;
   line-height: 0.82;
 }
 
@@ -491,8 +576,7 @@ button {
 .rate-board article,
 .distribution-card,
 .formula-card,
-.method-draft-grid article,
-.audit-board article {
+.method-draft-grid article {
   border: 1px solid var(--ink);
   background: var(--paper);
 }
@@ -527,7 +611,7 @@ button {
 
 .score-lockup strong {
   margin-top: 8px;
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
+  font-family: var(--font-display);
   font-size: 4rem;
   font-weight: 900;
   line-height: 0.9;
@@ -610,8 +694,8 @@ button {
 
 .stat-grid strong {
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
-  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  font-family: var(--font-display);
+  font-size: 2.15rem;
   font-weight: 900;
   line-height: 0.95;
   text-transform: uppercase;
@@ -636,8 +720,8 @@ button {
 .fight-stats-heading h2 {
   margin: 0;
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
-  font-size: clamp(2.2rem, 5vw, 4.8rem);
+  font-family: var(--font-display);
+  font-size: 3.9rem;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 0.86;
@@ -676,16 +760,16 @@ button {
 .finish-strip strong {
   margin-right: 12px;
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
-  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-family: var(--font-display);
+  font-size: 3.35rem;
   font-weight: 900;
   line-height: 0.9;
 }
 
 .finish-strip span {
   color: var(--muted);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
-  font-size: clamp(1.2rem, 2vw, 1.65rem);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 0.95;
@@ -720,7 +804,7 @@ button {
 
 .accuracy-ring strong {
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
+  font-family: var(--font-display);
   font-size: 2.35rem;
   font-weight: 900;
 }
@@ -729,8 +813,8 @@ button {
 .distribution-card h3 {
   margin: 0 0 22px;
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
-  font-size: clamp(1.75rem, 3vw, 2.65rem);
+  font-family: var(--font-display);
+  font-size: 2.25rem;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 0.9;
@@ -784,8 +868,8 @@ button {
 
 .rate-board strong {
   color: var(--ink);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
-  font-size: clamp(2rem, 4vw, 3.35rem);
+  font-family: var(--font-display);
+  font-size: 2.85rem;
   font-weight: 900;
   line-height: 0.9;
 }
@@ -793,7 +877,7 @@ button {
 .rate-board span {
   align-self: end;
   color: var(--muted);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 900;
   line-height: 1;
@@ -973,9 +1057,8 @@ button {
 .wins-panel h2,
 .score-panel h2,
 .methodology-hero h1,
-.formula-card h2,
-.audit-board h2 {
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
+.formula-card h2 {
+  font-family: var(--font-display);
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -984,7 +1067,7 @@ button {
 .score-panel h2 {
   margin: 0 0 18px;
   color: var(--ink);
-  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-size: 2.85rem;
   font-weight: 900;
   line-height: 0.9;
 }
@@ -1013,13 +1096,138 @@ button {
 .wins-panel li::before {
   color: var(--ufc-red);
   content: counter(wins);
-  font-family: "Roboto Condensed", "Archivo", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.4rem;
   font-weight: 900;
 }
 
 .score-panel {
   grid-row: span 2;
+}
+
+.model-tape,
+.recent-panel,
+.simulator-controls,
+.simulation-output {
+  border: 1px solid var(--ink);
+  border-top-width: 4px;
+  background: var(--paper);
+}
+
+.model-tape {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 112px minmax(0, 1fr);
+  min-height: 260px;
+}
+
+.tape-rail {
+  display: grid;
+  align-content: stretch;
+  justify-items: center;
+  padding: 16px 10px;
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.tape-rail span {
+  align-self: end;
+  color: #bdbdbd;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tape-rail strong {
+  align-self: start;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 0.95;
+}
+
+.tape-rail i {
+  width: 2px;
+  min-height: 24px;
+  background: var(--ufc-red);
+}
+
+.tape-copy {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+  gap: 22px;
+  padding: 22px;
+}
+
+.tape-copy h2,
+.recent-panel h2,
+.simulation-verdict h2 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.tape-copy h2 {
+  font-size: 3.05rem;
+}
+
+.tape-copy p {
+  margin: 14px 0 0;
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 750;
+  line-height: 1.6;
+}
+
+.component-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.component-list {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+}
+
+.component-list h3 {
+  margin: 0 0 12px;
+  color: var(--ufc-red);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.component-list div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.component-list span,
+.component-list strong,
+.component-list p {
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.component-list span,
+.component-list p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.component-list strong {
+  color: var(--ink);
 }
 
 .method-score-list {
@@ -1071,8 +1279,71 @@ button {
   line-height: 1.55;
 }
 
+.recent-panel {
+  padding: 22px;
+}
+
+.recent-panel h2 {
+  margin-bottom: 18px;
+  font-size: 2.85rem;
+}
+
+.recent-table {
+  display: grid;
+  gap: 0;
+}
+
+.recent-table article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(90px, 0.7fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: 1px solid var(--line);
+}
+
+.recent-table span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.recent-table .result-win {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.recent-table .result-loss {
+  border-color: var(--ufc-red);
+  color: var(--ufc-red);
+}
+
+.recent-table strong,
+.recent-table em,
+.recent-table b {
+  overflow: hidden;
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-table em {
+  color: var(--muted);
+}
+
+.recent-table b {
+  color: var(--ink);
+  text-align: right;
+}
+
 .methodology-page,
-.audit-page {
+.simulator-page {
   width: min(1260px, calc(100% - 42px));
   margin: 0 auto;
   padding: 42px 0 56px;
@@ -1087,7 +1358,7 @@ button {
 }
 
 .methodology-hero h1 {
-  font-size: clamp(3rem, 8vw, 6.8rem);
+  font-size: 5.25rem;
   line-height: 0.86;
 }
 
@@ -1132,7 +1403,7 @@ button {
   margin: 0;
   padding: 26px 18px 16px;
   color: var(--ink);
-  font-size: clamp(2rem, 4vw, 3.1rem);
+  font-size: 2.75rem;
   font-weight: 900;
   line-height: 0.9;
 }
@@ -1165,11 +1436,252 @@ button {
 
 .formula-box code {
   color: var(--ink);
-  font-family: "Archivo", system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.9rem;
   font-weight: 800;
   line-height: 1.55;
   white-space: normal;
+}
+
+.method-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0 18px 18px;
+  border-top: 4px solid var(--ink);
+}
+
+.method-metrics article {
+  display: grid;
+  min-height: 82px;
+  padding: 12px;
+  border: 1px solid var(--ink);
+  border-top: 0;
+  border-right: 0;
+}
+
+.method-metrics article:last-child {
+  border-right: 1px solid var(--ink);
+}
+
+.method-metrics span {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.method-metrics strong {
+  align-self: end;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.simulator-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.42fr) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+
+.simulator-controls {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.simulator-controls label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.simulator-controls select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.simulator-note {
+  margin: 2px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.5;
+  text-transform: none;
+}
+
+.simulation-output {
+  min-width: 0;
+}
+
+.simulation-verdict {
+  padding: 24px;
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.simulation-verdict span {
+  color: var(--ufc-red);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.simulation-verdict h2 {
+  max-width: 900px;
+  margin-top: 14px;
+  color: var(--paper);
+  font-size: 4.4rem;
+}
+
+.simulation-verdict p {
+  max-width: 720px;
+  margin: 16px 0 0;
+  color: #d9d9d9;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.prediction-split {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-bottom: 1px solid var(--ink);
+}
+
+.prediction-split article {
+  display: grid;
+  gap: 10px;
+  min-height: 168px;
+  padding: 18px;
+  border-right: 1px solid var(--ink);
+}
+
+.prediction-split article:last-child {
+  border-right: 0;
+}
+
+.prediction-split article.favorite {
+  background: #fff8f8;
+}
+
+.prediction-split span,
+.method-probability-grid span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prediction-split strong,
+.method-probability-grid strong {
+  align-self: end;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 2.45rem;
+  font-weight: 900;
+  line-height: 0.95;
+}
+
+.prediction-split b,
+.method-leader b {
+  color: var(--ufc-red);
+  font-family: var(--font-display);
+  font-size: 3.65rem;
+  font-weight: 900;
+  line-height: 0.9;
+}
+
+.win-meter,
+.method-probability-meter {
+  overflow: hidden;
+  height: 8px;
+  border: 1px solid var(--ink);
+  background: var(--soft);
+}
+
+.win-meter i,
+.method-probability-meter i {
+  display: block;
+  height: 100%;
+  background: var(--ufc-red);
+}
+
+.method-probability-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr 1fr;
+  border-bottom: 1px solid var(--ink);
+}
+
+.method-probability-grid article {
+  display: grid;
+  gap: 12px;
+  min-height: 150px;
+  padding: 18px;
+  border-right: 1px solid var(--ink);
+}
+
+.method-probability-grid article:last-child {
+  border-right: 0;
+}
+
+.method-probability-grid p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.method-leader {
+  background: var(--soft);
+}
+
+.method-outcome-list {
+  display: grid;
+}
+
+.method-outcome-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 0.8fr) 68px;
+  gap: 12px;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.method-outcome-list span {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.method-outcome-list strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-align: right;
 }
 
 .method-draft-grid {
@@ -1213,8 +1725,7 @@ button {
   text-transform: uppercase;
 }
 
-.method-draft-grid p,
-.audit-board p {
+.method-draft-grid p {
   margin: 0;
   color: var(--muted);
   font-size: 0.92rem;
@@ -1222,35 +1733,647 @@ button {
   line-height: 1.6;
 }
 
-.audit-board {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  border-top: 4px solid var(--ink);
-}
-
-.audit-board article {
-  min-height: 250px;
-  padding: 22px;
-  border-top: 0;
-  border-right: 0;
-}
-
-.audit-board article:last-child {
-  border-right: 1px solid var(--ink);
-}
-
-.audit-board svg {
-  color: var(--ufc-red);
-  margin-bottom: 34px;
-}
-
-.audit-board h2 {
-  margin: 0 0 14px;
+/* Modern Fight Lab skin */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 72px;
   color: var(--ink);
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
-  font-weight: 900;
+  border-bottom: 1px solid rgba(22, 25, 29, 0.1);
+  background: rgba(255, 254, 250, 0.92);
+  backdrop-filter: blur(18px);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.52rem;
+  letter-spacing: 0.01em;
+}
+
+.wordmark::before {
+  width: 8px;
+  height: 28px;
+  border-radius: 2px;
+  background: var(--ufc-red);
+  content: "";
+  transform: skewX(-12deg);
+}
+
+.nav-tab {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.nav-tab::after {
+  display: none;
+}
+
+.nav-tab:hover,
+.nav-tab.active {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.board-page,
+.profile-page,
+.methodology-page,
+.simulator-page {
+  padding-top: 34px;
+}
+
+.board-heading {
+  align-items: end;
+  margin-bottom: 18px;
+  border-bottom: 0;
+  padding-bottom: 0;
+  min-width: 0;
+}
+
+.board-heading > * {
+  min-width: 0;
+}
+
+.board-heading p,
+.methodology-hero p,
+.section-kicker {
+  color: var(--ufc-red);
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+}
+
+.board-heading h1,
+.methodology-hero h1,
+.profile-title h1,
+.champion-block strong,
+.stat-grid strong,
+.score-lockup strong,
+.fight-stats-heading h2,
+.finish-strip strong,
+.finish-strip span,
+.accuracy-card h3,
+.distribution-card h3,
+.wins-panel h2,
+.score-panel h2,
+.tape-copy h2,
+.recent-panel h2,
+.simulation-verdict h2,
+.prediction-split strong,
+.prediction-split b,
+.method-probability-grid strong,
+.method-leader b,
+.formula-card h2 {
+  font-family: var(--font-display);
+}
+
+.board-heading span {
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.45;
+  text-align: right;
+  overflow-wrap: break-word;
+}
+
+.source-toolbar {
+  margin-bottom: 26px;
+  padding: 12px 12px 12px 16px;
+  border: 1px solid rgba(22, 25, 29, 0.1);
+  border-radius: var(--radius-panel);
+  background: rgba(255, 254, 250, 0.74);
+  box-shadow: 0 8px 28px rgba(24, 30, 36, 0.045);
+  min-width: 0;
+}
+
+.source-toolbar > span {
+  color: var(--teal);
+  font-family: var(--font-data);
+  letter-spacing: 0.06em;
+}
+
+.source-toolbar > div {
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--soft);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.source-button {
+  min-height: 34px;
+  min-width: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-button.active {
+  color: var(--paper);
+  background: var(--ink);
+  box-shadow: 0 6px 14px rgba(22, 25, 29, 0.16);
+}
+
+.division-grid {
+  gap: 20px;
+}
+
+.division-card {
+  overflow: hidden;
+  border: 1px solid rgba(22, 25, 29, 0.1);
+  border-radius: var(--radius-panel);
+  background: rgba(255, 254, 250, 0.88);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.division-card:hover {
+  box-shadow: 0 20px 54px rgba(24, 30, 36, 0.11);
+  transform: translateY(-2px);
+}
+
+.champion-block {
+  grid-template-rows: auto auto auto 118px;
+  min-height: 218px;
+  padding: 16px 16px 0;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgba(47, 111, 115, 0.08), rgba(255, 254, 250, 0) 62%),
+    var(--paper);
+}
+
+.champion-block span {
+  color: var(--ufc-red);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+}
+
+.champion-block strong {
+  max-width: 100%;
+  color: var(--ink);
+  font-size: 1.58rem;
   line-height: 0.92;
+}
+
+.champion-block small {
+  color: var(--muted);
+  letter-spacing: 0.14em;
+}
+
+.fighter-portrait {
+  filter: saturate(0.92);
+}
+
+.head {
+  border-color: rgba(22, 25, 29, 0.68);
+  box-shadow: inset 0 -8px 14px rgba(22, 25, 29, 0.08);
+}
+
+.belt {
+  border-color: rgba(22, 25, 29, 0.84);
+  border-radius: 2px;
+  box-shadow: 0 10px 24px rgba(24, 30, 36, 0.18);
+}
+
+.ranking-list {
+  margin: 0;
+  padding: 10px 12px 14px;
+}
+
+.ranking-list button {
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: var(--radius-control);
+}
+
+.ranking-list button:hover {
+  background: var(--soft);
+}
+
+.ranking-list button:hover strong {
+  color: var(--ink);
+}
+
+.ranking-list span {
+  color: var(--muted);
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+}
+
+.ranking-list strong {
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.movement-badge {
+  font-family: var(--font-data);
+}
+
+.movement-badge.up {
+  color: var(--green);
+}
+
+.confidence-badge {
+  border-color: transparent;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--muted);
+  font-family: var(--font-data);
+}
+
+.confidence-badge.virtual_tie,
+.profile-confidence.virtual_tie {
+  border-color: rgba(201, 22, 34, 0.28);
+  background: rgba(201, 22, 34, 0.07);
+}
+
+.confidence-badge.close,
+.profile-confidence.close {
+  border-color: rgba(180, 106, 22, 0.28);
+  background: rgba(180, 106, 22, 0.08);
+  color: var(--amber);
+}
+
+.confidence-badge.fragile,
+.profile-confidence.fragile {
+  border-color: rgba(22, 25, 29, 0.1);
+  background: var(--ink);
+}
+
+.back-button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 254, 250, 0.76);
+}
+
+.back-button:hover {
+  border-color: rgba(201, 22, 34, 0.32);
+  color: var(--ufc-red);
+}
+
+.profile-hero {
+  min-height: 320px;
+  padding: 28px 28px 0;
+  border: 1px solid rgba(22, 25, 29, 0.1);
+  border-radius: var(--radius-panel);
+  background:
+    linear-gradient(135deg, rgba(47, 111, 115, 0.1), rgba(255, 254, 250, 0) 52%),
+    var(--paper);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.profile-title {
+  padding-bottom: 32px;
+}
+
+.profile-title h1 {
+  max-width: 820px;
+  font-size: 6.4rem;
+  line-height: 0.88;
+}
+
+.profile-title span {
+  color: var(--teal);
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.profile-grid {
+  gap: 20px;
+}
+
+.profile-summary,
+.wins-panel,
+.score-panel,
+.stat-grid article,
+.finish-strip article,
+.accuracy-card,
+.rate-board article,
+.distribution-card,
+.formula-card,
+.method-draft-grid article,
+.model-tape,
+.recent-panel,
+.simulator-controls,
+.simulation-output {
+  border-color: var(--line) !important;
+  border-radius: var(--radius-panel);
+  background: rgba(255, 254, 250, 0.92);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.profile-summary {
+  grid-template-columns: 178px minmax(0, 1fr);
+}
+
+.score-lockup {
+  background:
+    linear-gradient(160deg, rgba(47, 111, 115, 0.92), rgba(22, 25, 29, 0.98));
+}
+
+.score-lockup span {
+  color: rgba(255, 254, 250, 0.72);
+  font-family: var(--font-data);
+  letter-spacing: 0.06em;
+}
+
+.score-lockup strong {
+  color: var(--paper);
+}
+
+.profile-summary p,
+.tape-copy p,
+.formula-card p,
+.simulation-verdict p,
+.simulator-note {
+  font-weight: 650;
+}
+
+.profile-confidence {
+  border-radius: var(--radius-control);
+}
+
+.stat-grid,
+.rate-board,
+.method-metrics,
+.method-draft-grid {
+  gap: 12px;
+  border-top: 0;
+}
+
+.stat-grid article,
+.rate-board article,
+.method-metrics article,
+.method-draft-grid article {
+  border: 1px solid var(--line) !important;
+}
+
+.stat-grid svg {
+  color: var(--teal);
+}
+
+.stat-grid span,
+.rate-board span,
+.rate-board small,
+.finish-strip span,
+.distribution-row span,
+.accuracy-card dt,
+.method-score-list p,
+.recent-table em {
+  color: var(--muted);
+}
+
+.fight-stats-heading {
+  border-bottom: 1px solid var(--line);
+}
+
+.finish-strip {
+  gap: 12px;
+}
+
+.finish-strip article,
+.finish-strip article:last-child {
+  justify-content: flex-start;
+  border: 1px solid var(--line) !important;
+}
+
+.accuracy-grid,
+.distribution-grid {
+  gap: 20px;
+}
+
+.accuracy-card {
+  border-top-width: 1px;
+}
+
+.accuracy-ring {
+  background:
+    radial-gradient(circle, var(--paper) 0 55%, transparent 56%),
+    conic-gradient(var(--ufc-red) var(--accuracy), #e6e8df 0);
+}
+
+.distribution-card {
+  border-top-width: 1px;
+}
+
+.distribution-card h3 {
+  text-align: left;
+}
+
+.distribution-meter,
+.method-meter,
+.win-meter,
+.method-probability-meter {
+  border: 0;
+  border-radius: 999px;
+  background: #e6e8df;
+}
+
+.distribution-meter i,
+.method-meter i,
+.win-meter i,
+.method-probability-meter i {
+  border-radius: inherit;
+}
+
+.method-meter i {
+  background: var(--teal);
+}
+
+.target-figure span {
+  background: #efa9a6;
+}
+
+.target-row.target-body-row .distribution-meter i {
+  background: #df6f72;
+}
+
+.target-row.target-leg-row .distribution-meter i {
+  background: #efa9a6;
+}
+
+.wins-panel,
+.score-panel,
+.recent-panel {
+  padding: 24px;
+  border-top-width: 1px;
+}
+
+.wins-panel li::before {
+  color: var(--teal);
+  font-family: var(--font-data);
+  font-size: 0.9rem;
+}
+
+.model-tape {
+  grid-template-columns: 126px minmax(0, 1fr);
+  border-top-width: 1px;
+}
+
+.tape-rail {
+  background:
+    linear-gradient(180deg, rgba(47, 111, 115, 0.92), rgba(22, 25, 29, 0.98));
+}
+
+.tape-rail span {
+  color: rgba(255, 254, 250, 0.7);
+  font-family: var(--font-data);
+}
+
+.tape-rail i {
+  background: rgba(255, 254, 250, 0.28);
+}
+
+.component-list {
+  border-color: var(--line);
+  border-radius: var(--radius-control);
+  background: rgba(240, 242, 236, 0.52);
+}
+
+.component-list h3 {
+  color: var(--teal);
+  font-family: var(--font-data);
+}
+
+.recent-table span {
+  border-radius: 999px;
+  font-family: var(--font-data);
+}
+
+.methodology-hero {
+  padding-bottom: 24px;
+}
+
+.methodology-hero span {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.formula-card {
+  min-height: 410px;
+}
+
+.formula-topline {
+  background:
+    linear-gradient(90deg, rgba(47, 111, 115, 0.95), rgba(22, 25, 29, 0.98));
+}
+
+.formula-topline span,
+.formula-topline strong,
+.formula-box span,
+.method-metrics span,
+.method-draft-grid span,
+.simulator-controls label,
+.prediction-split span,
+.method-probability-grid span,
+.simulation-verdict span {
+  font-family: var(--font-data);
+  letter-spacing: 0.06em;
+}
+
+.formula-box {
+  border-top: 0;
+  border-radius: var(--radius-control);
+  background: var(--soft);
+}
+
+.formula-box code {
+  font-family: var(--font-data);
+  font-size: 0.78rem;
+}
+
+.method-metrics {
+  border-top: 0;
+}
+
+.simulator-layout {
+  gap: 20px;
+}
+
+.simulator-controls {
+  gap: 16px;
+  padding: 20px;
+  border-top-width: 1px;
+}
+
+.simulator-controls select {
+  min-height: 44px;
+  padding: 0 12px;
+  border-color: var(--line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+}
+
+.simulator-controls select:focus {
+  outline: 3px solid rgba(201, 22, 34, 0.16);
+  outline-offset: 2px;
+}
+
+.simulation-output {
+  border-top-width: 1px;
+}
+
+.simulation-verdict {
+  background:
+    linear-gradient(135deg, rgba(22, 25, 29, 0.98), rgba(47, 111, 115, 0.92));
+}
+
+.simulation-verdict span {
+  color: #ffb5b5;
+}
+
+.prediction-split,
+.method-probability-grid {
+  border-bottom-color: var(--line);
+}
+
+.prediction-split article,
+.method-probability-grid article {
+  border-right-color: var(--line);
+}
+
+.prediction-split article.favorite {
+  background: rgba(201, 22, 34, 0.055);
+}
+
+.prediction-split b,
+.method-leader b {
+  color: var(--ufc-red);
+}
+
+.method-leader {
+  background: rgba(47, 111, 115, 0.08);
+}
+
+.method-outcome-list article {
+  min-height: 50px;
+  border-bottom-color: var(--line);
+}
+
+.method-outcome-list strong {
+  font-family: var(--font-data);
 }
 
 button:focus-visible,
@@ -1276,12 +2399,21 @@ a:focus-visible {
   }
 
   .profile-grid,
-  .methodology-layout {
+  .methodology-layout,
+  .simulator-layout {
     grid-template-columns: 1fr;
   }
 
   .score-panel {
     grid-row: auto;
+  }
+
+  .tape-copy {
+    grid-template-columns: 1fr;
+  }
+
+  .component-columns {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1293,12 +2425,20 @@ a:focus-visible {
   .board-heading,
   .methodology-hero,
   .profile-hero {
+    display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .board-heading {
+    align-items: start;
+    gap: 10px;
   }
 
   .board-heading span,
   .methodology-hero span {
     margin-bottom: 0;
+    max-width: 100%;
+    text-align: left;
   }
 
   .source-toolbar {
@@ -1324,7 +2464,7 @@ a:focus-visible {
   }
 
   .profile-title h1 {
-    font-size: clamp(3.4rem, 18vw, 6.4rem);
+    font-size: 4.45rem;
   }
 
   .stat-grid {
@@ -1358,15 +2498,22 @@ a:focus-visible {
   }
 
   .method-draft-grid,
-  .audit-board {
+  .prediction-split,
+  .method-probability-grid {
     grid-template-columns: 1fr;
   }
 
   .method-draft-grid article,
-  .method-draft-grid article:nth-child(2n),
-  .audit-board article,
-  .audit-board article:last-child {
+  .method-draft-grid article:nth-child(2n) {
     border-right: 1px solid var(--ink);
+  }
+
+  .prediction-split article,
+  .prediction-split article:last-child,
+  .method-probability-grid article,
+  .method-probability-grid article:last-child {
+    border-right: 0;
+    border-bottom: 1px solid var(--ink);
   }
 }
 
@@ -1381,21 +2528,47 @@ a:focus-visible {
   }
 
   .site-header nav {
-    gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+    gap: 8px;
     overflow-x: auto;
     width: 100%;
+    min-width: 0;
   }
 
   .nav-tab {
-    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0 10px;
+    overflow: hidden;
+    font-size: 0.66rem;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .board-page,
   .profile-page,
   .methodology-page,
-  .audit-page {
-    width: min(100% - 28px, 520px);
+  .simulator-page {
+    width: calc(100vw - 28px);
+    max-width: calc(100vw - 28px);
     padding-top: 28px;
+  }
+
+  .board-heading,
+  .board-heading span,
+  .source-toolbar,
+  .source-toolbar > div,
+  .site-header nav {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .board-heading span {
+    display: block;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .division-grid {
@@ -1403,11 +2576,34 @@ a:focus-visible {
     row-gap: 42px;
   }
 
+  .source-toolbar {
+    padding: 12px;
+  }
+
+  .source-toolbar > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+  }
+
+  .source-button {
+    min-width: 0;
+    padding: 0 2px;
+    font-size: 0.6rem;
+  }
+
   .champion-block {
+    grid-template-rows: auto auto auto 104px;
     min-height: 208px;
   }
 
+  .fighter-portrait {
+    width: 132px;
+    height: 106px;
+  }
+
   .ranking-list button {
+    grid-template-columns: 28px minmax(0, 1fr) minmax(38px, auto);
     min-height: 32px;
   }
 
@@ -1417,6 +2613,23 @@ a:focus-visible {
 
   .profile-summary {
     grid-template-columns: 1fr;
+  }
+
+  .model-tape {
+    grid-template-columns: 1fr;
+  }
+
+  .tape-rail {
+    grid-template-columns: repeat(5, auto);
+    align-items: center;
+    justify-content: start;
+    gap: 12px;
+    overflow-x: auto;
+  }
+
+  .tape-rail i {
+    width: 24px;
+    min-height: 2px;
   }
 
   .score-lockup {
@@ -1479,6 +2692,22 @@ a:focus-visible {
     grid-template-columns: 72px minmax(60px, 1fr) auto;
   }
 
+  .recent-table article {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+
+  .recent-table em {
+    display: none;
+  }
+
+  .method-outcome-list article {
+    grid-template-columns: minmax(0, 1fr) 58px;
+  }
+
+  .method-probability-meter {
+    display: none;
+  }
+
   .stat-grid article,
   .stat-grid article:nth-child(2n),
   .stat-grid article:nth-child(3n) {
@@ -1487,5 +2716,521 @@ a:focus-visible {
 
   .fighter-portrait.large {
     display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-header {
+    width: 100vw;
+    max-width: 100vw;
+    overflow: hidden;
+  }
+
+  .site-header nav {
+    display: flex !important;
+    width: 320px !important;
+    max-width: calc(100vw - 36px) !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+  }
+
+  .nav-tab {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 0 2px !important;
+    font-size: 0.56rem !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  .board-heading,
+  .source-toolbar {
+    width: 334px !important;
+    max-width: calc(100vw - 28px) !important;
+  }
+
+  .board-heading span {
+    width: 100% !important;
+    max-width: 320px !important;
+  }
+
+  .source-toolbar > div {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .source-button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 0 2px !important;
+    font-size: 0.56rem !important;
+    letter-spacing: 0.02em !important;
+  }
+}
+
+/* Dark product pass */
+:root {
+  color-scheme: dark;
+  --ufc-red: #ff4048;
+  --ink: #f3eee6;
+  --text: #e2ded6;
+  --muted: #8f98a3;
+  --line: rgba(255, 255, 255, 0.11);
+  --soft: #171b20;
+  --canvas: #080a0d;
+  --paper: #101419;
+  --green: #65c48f;
+  --teal: #6db7b4;
+  --amber: #e0a84d;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+  --shadow-card: 0 18px 44px rgba(0, 0, 0, 0.26);
+}
+
+body {
+  color: var(--text);
+  background: var(--canvas);
+}
+
+.page-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 260px),
+    var(--canvas);
+}
+
+.site-header {
+  color: var(--ink);
+  border-bottom-color: var(--line);
+  background: rgba(8, 10, 13, 0.9);
+}
+
+.wordmark,
+.nav-tab,
+.source-button,
+.ranking-list button,
+.champion-block,
+.back-button {
+  color: inherit;
+}
+
+.nav-tab {
+  color: var(--muted);
+}
+
+.nav-tab:hover,
+.nav-tab.active,
+.source-button.active {
+  color: #080a0d;
+  background: var(--ink);
+}
+
+.board-heading h1,
+.methodology-hero h1,
+.profile-title h1,
+.champion-block strong,
+.stat-grid strong,
+.score-lockup strong,
+.fight-stats-heading h2,
+.finish-strip strong,
+.accuracy-card h3,
+.distribution-card h3,
+.wins-panel h2,
+.score-panel h2,
+.tape-copy h2,
+.recent-panel h2,
+.simulation-verdict h2,
+.prediction-split strong,
+.method-probability-grid strong,
+.formula-card h2 {
+  color: var(--ink);
+}
+
+.board-heading p,
+.methodology-hero p,
+.section-kicker,
+.champion-block span,
+.formula-box span,
+.method-draft-grid span {
+  color: var(--ufc-red);
+}
+
+.board-heading span,
+.methodology-hero span,
+.champion-block small,
+.stat-grid span,
+.rate-board span,
+.rate-board small,
+.finish-strip span,
+.distribution-row span,
+.accuracy-card dt,
+.method-score-list p,
+.recent-table em,
+.method-probability-grid p {
+  color: var(--muted);
+}
+
+.source-toolbar,
+.division-card,
+.profile-hero,
+.profile-summary,
+.wins-panel,
+.score-panel,
+.stat-grid article,
+.finish-strip article,
+.accuracy-card,
+.rate-board article,
+.distribution-card,
+.formula-card,
+.method-draft-grid article,
+.model-tape,
+.recent-panel,
+.simulator-controls,
+.simulation-output,
+.component-list {
+  border-color: var(--line) !important;
+  background: var(--paper);
+  box-shadow: var(--shadow-card);
+}
+
+.source-toolbar {
+  background: #0d1116;
+}
+
+.source-toolbar > span {
+  color: var(--teal);
+}
+
+.source-toolbar > div {
+  border-color: var(--line);
+  background: #151a20;
+}
+
+.source-button {
+  color: var(--muted);
+  background: transparent;
+}
+
+.division-grid {
+  gap: 18px;
+}
+
+.division-card {
+  background: #0f1318;
+}
+
+.division-card:hover {
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.38);
+}
+
+.champion-block {
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  gap: 8px;
+  min-height: 142px;
+  padding: 18px;
+  border-bottom-color: var(--line);
+  background: #11161b;
+}
+
+.champion-block strong {
+  margin-top: 0;
+}
+
+.fighter-portrait,
+.fighter-portrait.large,
+.head,
+.torso,
+.belt {
+  display: none !important;
+}
+
+.ranking-list {
+  padding: 12px;
+}
+
+.ranking-list button:hover {
+  background: #171d23;
+}
+
+.ranking-list span {
+  color: var(--muted);
+}
+
+.ranking-list strong,
+.method-outcome-list span,
+.recent-table strong,
+.recent-table b,
+.distribution-row strong,
+.accuracy-card dd {
+  color: var(--text);
+}
+
+.confidence-badge {
+  background: #1b2026;
+  color: #a9b1bb;
+}
+
+.confidence-badge.virtual_tie,
+.profile-confidence.virtual_tie {
+  border-color: rgba(255, 64, 72, 0.38);
+  background: rgba(255, 64, 72, 0.1);
+  color: #ff858b;
+}
+
+.confidence-badge.close,
+.profile-confidence.close {
+  border-color: rgba(224, 168, 77, 0.42);
+  background: rgba(224, 168, 77, 0.1);
+  color: var(--amber);
+}
+
+.profile-hero {
+  grid-template-columns: 1fr;
+  min-height: auto;
+  padding: 28px;
+  background: #0f1318;
+}
+
+.profile-title {
+  padding-bottom: 0;
+}
+
+.profile-title span {
+  color: var(--teal);
+}
+
+.back-button {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #171d23;
+  color: var(--ink);
+}
+
+.back-button:hover {
+  border-color: rgba(255, 64, 72, 0.58);
+  background: #1f252c;
+  color: var(--ink);
+}
+
+.back-button svg {
+  color: var(--muted);
+}
+
+.back-button:hover svg {
+  color: var(--ufc-red);
+}
+
+.profile-grid {
+  align-items: start;
+}
+
+.profile-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  min-height: 0;
+  padding: 16px;
+}
+
+.score-lockup {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  min-width: 0;
+  min-height: 0;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  color: var(--ink);
+  background: #171d23;
+}
+
+.score-lockup span {
+  max-width: none;
+  color: var(--muted);
+  text-align: left;
+}
+
+.score-lockup strong {
+  margin-top: 0;
+  font-size: 3.2rem;
+}
+
+.profile-copy {
+  padding: 0;
+}
+
+.profile-summary p {
+  color: var(--text);
+}
+
+.profile-confidence {
+  border-color: var(--line);
+}
+
+.stat-grid,
+.rate-board,
+.finish-strip,
+.accuracy-grid,
+.distribution-grid,
+.method-metrics,
+.method-draft-grid {
+  gap: 12px;
+}
+
+.stat-grid article,
+.rate-board article,
+.method-metrics article,
+.method-draft-grid article {
+  border-color: var(--line) !important;
+}
+
+.stat-grid svg {
+  color: var(--teal);
+}
+
+.model-tape {
+  grid-template-columns: 1fr;
+}
+
+.component-list {
+  background: #151a20;
+}
+
+.component-list h3 {
+  color: var(--teal);
+}
+
+.method-meter,
+.distribution-meter,
+.win-meter,
+.method-probability-meter {
+  background: #252b33;
+}
+
+.method-meter i,
+.distribution-meter i,
+.win-meter i,
+.method-probability-meter i {
+  background: var(--ufc-red);
+}
+
+.formula-topline,
+.simulation-verdict {
+  background: #11161b;
+}
+
+.formula-box,
+.method-leader,
+.prediction-split article.favorite {
+  background: #151a20;
+}
+
+.simulator-controls select {
+  border-color: var(--line);
+  background: #151a20;
+  color: var(--ink);
+}
+
+.target-figure span {
+  background: #6f4247;
+}
+
+.target-head,
+.target-row.target-head-row .distribution-meter i {
+  background: var(--ufc-red) !important;
+}
+
+.target-row.target-body-row .distribution-meter i {
+  background: #b8555b;
+}
+
+.target-row.target-leg-row .distribution-meter i {
+  background: #7f575a;
+}
+
+@media (max-width: 860px) {
+  .profile-hero {
+    padding: 22px;
+  }
+
+  .profile-title h1 {
+    font-size: 4rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .champion-block {
+    min-height: 128px;
+  }
+
+  .score-lockup {
+    align-items: start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .score-lockup strong {
+    font-size: 2.8rem;
+  }
+
+  .profile-title h1 {
+    font-size: 3.35rem;
+  }
+}
+
+.score-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border-bottom: 1px solid var(--line);
+  background: var(--line);
+}
+
+.score-breakdown article {
+  display: grid;
+  align-content: start;
+  min-height: 126px;
+  padding: 18px;
+  background: #12171d;
+}
+
+.score-breakdown span {
+  color: var(--muted);
+  font-family: var(--font-data);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.score-breakdown strong {
+  margin-top: 10px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4vw, 4rem);
+  font-weight: 900;
+  line-height: 0.88;
+}
+
+.score-breakdown p {
+  max-width: 22ch;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.tape-copy {
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .score-breakdown {
+    grid-template-columns: 1fr;
+  }
+
+  .score-breakdown article {
+    min-height: auto;
   }
 }

@@ -19,7 +19,9 @@
     "model:tune": "node scripts/tune-model.mjs",
     "model:explain": "node scripts/explain-rankings.mjs",
     "model:assertions": "node scripts/assert-rankings.mjs",
-    "model:simulate": "node scripts/simulate-fight.mjs"
+    "model:simulate": "node scripts/simulate-fight.mjs",
+    "model:export": "node scripts/export-model-public.mjs",
+    "model:refresh": "npm run model:rankings && npm run model:explain && npm run model:audit && npm run model:backtest && npm run model:export"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

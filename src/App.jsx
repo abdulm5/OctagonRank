@@ -1,14 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
   Activity,
   ArrowLeft,
-  BadgeCheck,
   BarChart3,
   Crosshair,
-  Dumbbell,
   Medal,
-  ShieldAlert,
   Swords,
   Trophy,
 } from "lucide-react";
@@ -22,9 +19,9 @@ const metaBoardDivisions = [
       "Manel Kape",
       "Tatsuro Taira",
       "Brandon Royval",
-      "Loneer Kavanagh",
-      "Kyoji Horiguchi",
-      "Alex Almabayev",
+      "Lone’er Kavanagh",
+      { name: "Asu Almabayev", change: 1 },
+      { name: "Kyoji Horiguchi", change: -1 },
       "Amir Albazi",
       "Brandon Moreno",
       "Kevin Borjas",
@@ -32,7 +29,7 @@ const metaBoardDivisions = [
       "Sumudaerji",
       "Steve Erceg",
       "Alex Perez",
-      "Charles Johnson",
+      { name: "Joseph Morales", change: "NR" },
     ],
   },
   {
@@ -85,7 +82,7 @@ const metaBoardDivisions = [
       "Arman Tsarukyan",
       "Charles Oliveira",
       "Max Holloway",
-      "Benoit Saint Denis",
+      "Benoît Saint Denis",
       "Mateusz Gamrot",
       "Renato Moicano",
       "Quillan Salkilld",
@@ -93,7 +90,7 @@ const metaBoardDivisions = [
       "Mauricio Ruffy",
       "Dan Hooker",
       "Tom Nolan",
-      "Manuel Torres",
+      { name: "Rafael Fiziev", change: "NR" },
       "Grant Dawson",
       "Rafa Garcia",
     ],
@@ -115,7 +112,7 @@ const metaBoardDivisions = [
       "Mike Malott",
       "Michael Venom Page",
       "Daniel Rodriguez",
-      "Uros Medic",
+      "Uroš Medić",
       "Yaroslav Amosov",
     ],
   },
@@ -126,18 +123,18 @@ const metaBoardDivisions = [
       "Khamzat Chimaev",
       "Dricus Du Plessis",
       "Nassourdine Imavov",
-      "Brendan Allen",
-      "Joe Pyfer",
+      { name: "Joe Pyfer", change: 1 },
+      { name: "Brendan Allen", change: -1 },
       "Caio Borralho",
       "Anthony Hernandez",
       "Israel Adesanya",
       "Gregory Rodrigues",
-      "Jared Cannonier",
-      "Christian Leroy Duncan",
-      "Bo Nickal",
-      "Paulo Costa",
-      "Ikram Aliskerov",
-      "Reinier De Ridder",
+      { name: "Ikram Aliskerov", change: 4 },
+      { name: "Jared Cannonier", change: -1 },
+      { name: "Christian Leroy Duncan", change: -1 },
+      { name: "Bo Nickal", change: -1 },
+      { name: "Paulo Costa", change: -1 },
+      { name: "Abus Magomedov", change: "NR" },
     ],
   },
   {
@@ -146,7 +143,7 @@ const metaBoardDivisions = [
     rankings: [
       "Alex Pereira",
       "Magomed Ankalaev",
-      "Jiri Prochazka",
+      "Jiří Procházka",
       "Paulo Costa",
       "Jamahal Hill",
       "Khalil Rountree Jr.",
@@ -158,7 +155,7 @@ const metaBoardDivisions = [
       "Navajo Stirling",
       "Alonzo Menifield",
       "Johnny Walker",
-      "Jan Blachowicz",
+      "Jan Błachowicz",
     ],
   },
   {
@@ -170,13 +167,13 @@ const metaBoardDivisions = [
       "Sergei Pavlovich",
       "Alex Pereira",
       "Josh Hokit",
-      "Waldo Cortes-Acosta",
+      "Waldo Cortes Acosta",
       "Rizvan Kuniev",
       "Curtis Blaydes",
       "Serghei Spivac",
       "Vitor Petrino",
       "Valter Walker",
-      "Brando Pericic",
+      "Brando Peričić",
       "Mario Pinto",
       "Mick Parkin",
       "Ryan Spann",
@@ -254,10 +251,10 @@ const mediaRankingOverrides = {
     "Tatsuro Taira",
     "Brandon Royval",
     "Kyoji Horiguchi",
-    "Lone'er Kavanagh",
-    "Amir Albazi",
-    "Brandon Moreno",
-    "Asu Almabayev",
+    "Lone’er Kavanagh",
+    { name: "Asu Almabayev", change: 2 },
+    { name: "Amir Albazi", change: -1 },
+    { name: "Brandon Moreno", change: -1 },
     "Steve Erceg",
     "Alex Perez",
     "Tim Elliott",
@@ -278,9 +275,9 @@ const mediaRankingOverrides = {
     "Marlon Vera",
     "Payton Talbott",
     "Raul Rosas Jr.",
-    "Vinicius Oliveira",
-    "Raoni Barcelos",
-    "Marcus McGhee",
+    { name: "Raoni Barcelos", change: 1 },
+    { name: "Marcus McGhee", change: 1 },
+    { name: "Farid Basharat", change: "NR" },
   ],
   Featherweight: [
     "Movsar Evloev",
@@ -297,20 +294,20 @@ const mediaRankingOverrides = {
     "Aaron Pico",
     "Melquizael Costa",
     "David Onama",
-    "Josh Emmett",
+    { name: "Patricio Pitbull", change: "NR" },
   ],
   Lightweight: [
     "Ilia Topuria",
     "Arman Tsarukyan",
     "Charles Oliveira",
     "Max Holloway",
-    "Benoit Saint Denis",
+    "Benoît Saint Denis",
     "Paddy Pimblett",
     "Mauricio Ruffy",
     "Mateusz Gamrot",
     "Dan Hooker",
-    "Renato Moicano",
-    "Rafael Fiziev",
+    { name: "Rafael Fiziev", change: 1 },
+    { name: "Renato Moicano", rank: 10 },
     "Quillan Salkilld",
     "Tom Nolan",
     "Beneil Dariush",
@@ -330,7 +327,7 @@ const mediaRankingOverrides = {
     "Yaroslav Amosov",
     "Mike Malott",
     "Michael Venom Page",
-    "Uros Medic",
+    "Uroš Medić",
     "Daniel Rodriguez",
   ],
   Middleweight: [
@@ -341,38 +338,39 @@ const mediaRankingOverrides = {
     "Caio Borralho",
     "Anthony Hernandez",
     "Joe Pyfer",
-    "Reinier De Ridder",
+    "Reinier de Ridder",
     "Israel Adesanya",
     "Robert Whittaker",
     "Jared Cannonier",
     "Gregory Rodrigues",
     "Christian Leroy Duncan",
     "Roman Dolidze",
-    "Bo Nickal",
+    { name: "Ikram Aliskerov", change: "NR" },
+    { name: "Bo Nickal", rank: 15 },
   ],
   "Light Heavyweight": [
     "Magomed Ankalaev",
-    "Jiri Prochazka",
+    "Jiří Procházka",
     "Alex Pereira",
-    "Jan Blachowicz",
+    "Jan Błachowicz",
     "Khalil Rountree Jr.",
     "Jamahal Hill",
-    "Paulo Costa",
-    "Azamat Murzakanov",
+    { name: "Azamat Murzakanov", change: 1 },
+    { name: "Paulo Costa", rank: 7 },
     "Volkan Oezdemir",
     "Bogdan Guskov",
     "Dominick Reyes",
     "Nikita Krylov",
     "Johnny Walker",
-    "Alonzo Menifield",
-    "Aleksandar Rakic",
+    { name: "Aleksandar Rakić", change: 1 },
+    { name: "Alonzo Menifield", change: -1 },
   ],
   Heavyweight: [
     "Ciryl Gane",
     "Alexander Volkov",
     "Sergei Pavlovich",
     "Josh Hokit",
-    "Waldo Cortes-Acosta",
+    "Waldo Cortes Acosta",
     "Serghei Spivac",
     "Curtis Blaydes",
     "Rizvan Kuniev",
@@ -380,7 +378,7 @@ const mediaRankingOverrides = {
     "Ante Delija",
     "Derrick Lewis",
     "Marcin Tybura",
-    "Brando Pericic",
+    "Brando Peričić",
     "Valter Walker",
     "Mick Parkin",
   ],
@@ -417,6 +415,23 @@ const mediaRankingOverrides = {
     "Eduarda Moura",
     "JJ Aldrich",
     "Gabriella Fernandes",
+  ],
+  "Women's Bantamweight": [
+    "Julianna Peña",
+    "Raquel Pennington",
+    "Joselyne Edwards",
+    "Norma Dumont",
+    "Ailin Perez",
+    { name: "Yana Santos", change: 1 },
+    { name: "Irene Aldana", change: -1 },
+    "Macy Chiasson",
+    "Luana Santos",
+    "Jacqueline Cavalcanti",
+    "Karol Rosa",
+    "Bia Mesquita",
+    "Nora Cornolle",
+    "Michelle Montague",
+    "Miesha Tate",
   ],
 };
 
@@ -779,18 +794,35 @@ const rankingSources = {
   meta: {
     label: "Meta",
     eyebrow: "UFC Meta",
-    description: "The AI-influenced UFC ranking board from the reference screenshot.",
+    description: "The latest AI-influenced UFC ranking board from your pasted update.",
+    updated: "Last updated Saturday, Jun. 27",
     divisions: metaBoardDivisions,
   },
   media: {
     label: "Media",
     eyebrow: "Media panel",
-    description: "The current media-panel men’s rankings from your pasted UFC text.",
+    description: "The current media-panel UFC ranking board from your pasted update.",
+    updated: "Last updated Tuesday, Jun. 30",
     divisions: buildRankingSource(mediaRankingOverrides),
   },
 };
 
 const sourceOrder = ["ours", "meta", "media"];
+
+const modelUrls = {
+  rankings: `${import.meta.env.BASE_URL}model/rankings.json`,
+  explanations: `${import.meta.env.BASE_URL}model/explanations.json`,
+  summary: `${import.meta.env.BASE_URL}model/summary.json`,
+};
+
+const statIconMap = {
+  record: Medal,
+  wins: Trophy,
+  strikes: BarChart3,
+  finishes: Crosshair,
+  submissions: Swords,
+  activity: Activity,
+};
 
 const profileOverrides = {
   "Ian Machado Garry": {
@@ -982,15 +1014,6 @@ function slug(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-function initials(name) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("");
-}
-
 function seedValue(name, rank, offset = 0) {
   const total = name.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return total + rank * 17 + offset;
@@ -1020,7 +1043,7 @@ function getRankingConfidence(source, division, name, isChampion = false) {
 }
 
 function makeProfile(name, division, rank = 0, isChampion = false, confidence = null) {
-  const override = profileOverrides[name] ?? {};
+  const override = getProfileOverride(name);
   const seed = seedValue(name, rank || 1);
   const wins = override.wins ?? Math.max(10, 28 - Math.min(rank, 14) + (seed % 5));
   const koTko = override.koTko ?? Math.max(1, Math.round(wins * (0.28 + (seed % 5) * 0.04)));
@@ -1040,8 +1063,11 @@ function makeProfile(name, division, rank = 0, isChampion = false, confidence = 
     sigStrikes,
     koTko,
     submissions,
+    scoreLabel: "OctagonRank score",
     score,
     confidence,
+    statCards: null,
+    modelData: null,
     recordLine:
       override.recordLine ??
       (isChampion
@@ -1062,26 +1088,242 @@ function makeProfile(name, division, rank = 0, isChampion = false, confidence = 
   };
 }
 
+function normalizeName(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function fighterKey(division, fighter) {
+  return `${normalizeName(division)}|${normalizeName(fighter)}`;
+}
+
+function getProfileOverride(name) {
+  if (profileOverrides[name]) return profileOverrides[name];
+  const normalizedTarget = normalizeName(name);
+  return Object.entries(profileOverrides).find(([overrideName]) => normalizeName(overrideName) === normalizedTarget)?.[1] ?? {};
+}
+
+function rankingEntryName(entry) {
+  return typeof entry === "string" ? entry : entry?.name ?? "";
+}
+
+function rankingEntryChange(entry) {
+  return typeof entry === "string" ? null : entry?.change ?? null;
+}
+
+function rankingEntryRank(entry, fallbackRank) {
+  return typeof entry === "string" ? fallbackRank : entry?.rank ?? fallbackRank;
+}
+
+function buildModelSource(modelRankings) {
+  if (!modelRankings?.divisions?.length) return rankingSources.ours;
+
+  return {
+    label: "Our model",
+    eyebrow: `Updated ${modelRankings.rankings_as_of ?? "model"}`,
+    description: "OctagonRank model output with fighter scores, confidence bands, and ranking explanations.",
+    divisions: modelRankings.divisions.map((division) => ({
+      division: division.division,
+      champion: division.champion?.fighter_name,
+      rankings: (division.rankings ?? []).map((fighter) => fighter.fighter_name),
+    })),
+  };
+}
+
+function buildModelProfileLookup(modelRankings) {
+  const lookup = new Map();
+  for (const division of modelRankings?.divisions ?? []) {
+    if (division.champion) {
+      lookup.set(
+        fighterKey(division.division, division.champion.fighter_name),
+        makeModelProfile(division.champion, division.division),
+      );
+    }
+    for (const fighter of division.rankings ?? []) {
+      lookup.set(fighterKey(division.division, fighter.fighter_name), makeModelProfile(fighter, division.division));
+    }
+  }
+  return lookup;
+}
+
+function makeModelProfile(fighter, division) {
+  const override = getProfileOverride(fighter.fighter_name);
+  const displayRank = Number(fighter.display_rank ?? 0);
+  const confidence = fighter.score_confidence
+    ? {
+        level: fighter.score_confidence,
+        label: fighter.score_confidence_label || confidenceLevelCopy[fighter.score_confidence]?.label || "Model band",
+        shortLabel: confidenceLevelCopy[fighter.score_confidence]?.shortLabel || fighter.score_confidence,
+        detail: fighter.score_confidence_detail || confidenceLevelCopy[fighter.score_confidence]?.detail || "",
+      }
+    : null;
+  const totalStrikes = Number(fighter.totals?.sig_strikes_landed ?? 0);
+  const submissionAttempts = Number(fighter.totals?.submission_attempts ?? 0);
+  const winsList = [
+    fighter.best_win?.opponent_name && `Best win: ${fighter.best_win.opponent_name}`,
+    ...(fighter.last_five ?? [])
+      .filter((fight) => fight.result === "W")
+      .slice(0, 4)
+      .map((fight) => `${fight.opponent_name} (${fight.method})`),
+  ].filter(Boolean);
+
+  return {
+    id: `${slug(division)}-${fighter.is_champion ? "champion" : displayRank}-${slug(fighter.fighter_name)}`,
+    name: fighter.fighter_name,
+    division,
+    rank: displayRank,
+    isChampion: Boolean(fighter.is_champion),
+    record: fighter.record || `${fighter.wins}-${fighter.losses}`,
+    wins: Number(fighter.wins ?? 0),
+    sigStrikes: totalStrikes,
+    koTko: Number(fighter.finishes ?? 0),
+    submissions: submissionAttempts,
+    scoreLabel: "OctagonRank score",
+    score: formatScore(fighter.final_score),
+    confidence,
+    statCards: [
+      { icon: "record", label: "Record", value: fighter.record || `${fighter.wins}-${fighter.losses}` },
+      { icon: "wins", label: "Wins", value: fighter.wins },
+      { icon: "strikes", label: "Sig. strikes", value: totalStrikes.toLocaleString() },
+      { icon: "finishes", label: "Finishes", value: fighter.finishes },
+      { icon: "submissions", label: "Sub. attempts", value: submissionAttempts },
+      { icon: "activity", label: "Inactive", value: `${formatScore(fighter.months_inactive, 1)}m` },
+    ],
+    recordLine: fighter.explanation || "Model explanation is not available for this fighter yet.",
+    winsList: winsList.length ? winsList : ["No recent win sample exported."],
+    method: buildMethodRows(fighter),
+    modelData: fighter,
+    statsDetail: override.statsDetail,
+  };
+}
+
+function buildMethodRows(fighter) {
+  const positives = (fighter.top_positive_drivers ?? []).slice(0, 4).map((driver) => [
+    driver.label,
+    meterValue(driver.value),
+    impactCopy(driver.value),
+  ]);
+  const negatives = (fighter.top_negative_drivers ?? []).slice(0, 2).map((driver) => [
+    driver.label,
+    meterValue(driver.value),
+    impactCopy(driver.value),
+  ]);
+  const policy = (fighter.policy_components ?? []).slice(0, 2).map((component) => [
+    component.label,
+    meterValue(component.value),
+    ruleImpactCopy(component.value),
+  ]);
+
+  return [...positives, ...negatives, ...policy].slice(0, 6);
+}
+
+function getProfileForBoard({ profileLookup, source, division, name, rank, isChampion }) {
+  if (source === "ours") {
+    const profile = profileLookup.get(fighterKey(division, name));
+    if (profile) return profile;
+  }
+  return makeProfile(name, division, rank, isChampion, getRankingConfidence(source, division, name, isChampion));
+}
+
+function formatScore(value, digits = 1) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "0";
+  return parsed.toFixed(digits);
+}
+
+function signed(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "";
+  return `${parsed >= 0 ? "+" : ""}${formatScore(parsed, 2)}`;
+}
+
+function impactCopy(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed === 0) return "Neutral in this run.";
+  const amount = formatScore(Math.abs(parsed), 2);
+  return parsed > 0 ? `Pushes the score up ${amount}.` : `Pulls the score down ${amount}.`;
+}
+
+function ruleImpactCopy(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed === 0) return "No ranking-rule movement.";
+  const amount = formatScore(Math.abs(parsed), 2);
+  return parsed > 0 ? `Ranking rule moves the final score up ${amount}.` : `Ranking rule moves the final score down ${amount}.`;
+}
+
+function meterValue(value) {
+  return Math.max(6, Math.min(100, Math.abs(Number(value) || 0) * 4));
+}
+
+function percent(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "";
+  return `${(parsed * 100).toFixed(1)}%`;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function round(value, places = 2) {
+  const factor = 10 ** places;
+  return Math.round((Number(value) + Number.EPSILON) * factor) / factor;
+}
+
+function expectedScore(ratingA, ratingB) {
+  return 1 / (1 + 10 ** ((ratingB - ratingA) / 400));
+}
+
 export default function App() {
   const [activeView, setActiveView] = useState("rankings");
   const [rankingSource, setRankingSource] = useState("ours");
   const [selectedAthlete, setSelectedAthlete] = useState(null);
-  const activeSource = rankingSources[rankingSource];
+  const [modelRankings, setModelRankings] = useState(null);
+  const [modelSummary, setModelSummary] = useState(null);
+  const [modelLoadState, setModelLoadState] = useState("loading");
 
-  const flattenedAthletes = useMemo(() => {
-    return activeSource.divisions.flatMap((division) => [
-      makeProfile(
-        division.champion,
-        division.division,
-        0,
-        true,
-        getRankingConfidence(rankingSource, division.division, division.champion, true),
-      ),
-      ...division.rankings.map((name, index) =>
-        makeProfile(name, division.division, index + 1, false, getRankingConfidence(rankingSource, division.division, name)),
-      ),
-    ]);
-  }, [activeSource, rankingSource]);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadModelArtifacts() {
+      try {
+        const [rankingsResponse, summaryResponse] = await Promise.all([
+          fetch(modelUrls.rankings),
+          fetch(modelUrls.summary),
+        ]);
+        if (!rankingsResponse.ok) throw new Error(`Could not load ${modelUrls.rankings}`);
+        if (!summaryResponse.ok) throw new Error(`Could not load ${modelUrls.summary}`);
+        const [rankings, summary] = await Promise.all([rankingsResponse.json(), summaryResponse.json()]);
+        if (!cancelled) {
+          setModelRankings(rankings);
+          setModelSummary(summary);
+          setModelLoadState("ready");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error(error);
+          setModelLoadState("error");
+        }
+      }
+    }
+    loadModelArtifacts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sourceCatalog = useMemo(
+    () => ({
+      ...rankingSources,
+      ours: buildModelSource(modelRankings),
+    }),
+    [modelRankings],
+  );
+  const profileLookup = useMemo(() => buildModelProfileLookup(modelRankings), [modelRankings]);
+  const activeSource = sourceCatalog[rankingSource];
 
   function openAthlete(profile) {
     setSelectedAthlete(profile);
@@ -1130,14 +1372,14 @@ export default function App() {
               Methodology
             </button>
             <button
-              className={activeView === "audit" ? "nav-tab active" : "nav-tab"}
+              className={activeView === "simulator" ? "nav-tab active" : "nav-tab"}
               type="button"
               onClick={() => {
-                setActiveView("audit");
+                setActiveView("simulator");
                 setSelectedAthlete(null);
               }}
             >
-              Audit
+              Simulator
             </button>
           </nav>
         </header>
@@ -1148,6 +1390,10 @@ export default function App() {
               key="ranking-board"
               divisions={activeSource.divisions}
               source={rankingSource}
+              sourceCatalog={sourceCatalog}
+              profileLookup={profileLookup}
+              modelLoadState={modelLoadState}
+              modelSummary={modelSummary}
               onSelect={openAthlete}
               onSourceChange={setRankingSource}
             />
@@ -1162,17 +1408,19 @@ export default function App() {
             />
           )}
 
-          {activeView === "methodology" && <MethodologyView key="methodology-view" />}
+          {activeView === "methodology" && <MethodologyView key="methodology-view" summary={modelSummary} />}
 
-          {activeView === "audit" && <AuditView key="audit-view" athletes={flattenedAthletes} />}
+          {activeView === "simulator" && (
+            <SimulatorView key="simulator-view" modelRankings={modelRankings} modelLoadState={modelLoadState} />
+          )}
         </AnimatePresence>
       </main>
     </LayoutGroup>
   );
 }
 
-function RankingBoard({ divisions, source, onSourceChange, onSelect }) {
-  const activeSource = rankingSources[source];
+function RankingBoard({ divisions, source, sourceCatalog, profileLookup, modelLoadState, modelSummary, onSourceChange, onSelect }) {
+  const activeSource = sourceCatalog[source];
 
   return (
     <motion.section
@@ -1187,11 +1435,15 @@ function RankingBoard({ divisions, source, onSourceChange, onSelect }) {
           <p>{activeSource.eyebrow}</p>
           <h1>Fighter Rankings</h1>
         </div>
-        <span>{activeSource.description}</span>
+        <span>
+          {activeSource.description}
+          {source === "ours" && modelSummary?.rankings_as_of ? ` As of ${modelSummary.rankings_as_of}.` : ""}
+          {activeSource.updated ? ` ${activeSource.updated}.` : ""}
+        </span>
       </div>
 
       <div className="source-toolbar" aria-label="Ranking source">
-        <span>Compare source</span>
+        <span>{source === "ours" && modelLoadState === "loading" ? "Loading model output" : "Compare source"}</span>
         <div>
           {sourceOrder.map((sourceKey) => (
             <button
@@ -1200,7 +1452,7 @@ function RankingBoard({ divisions, source, onSourceChange, onSelect }) {
               type="button"
               onClick={() => onSourceChange(sourceKey)}
             >
-              {rankingSources[sourceKey].label}
+              {sourceCatalog[sourceKey].label}
             </button>
           ))}
         </div>
@@ -1208,21 +1460,28 @@ function RankingBoard({ divisions, source, onSourceChange, onSelect }) {
 
       <div className="division-grid">
         {divisions.map((division) => (
-          <DivisionColumn key={division.division} division={division} source={source} onSelect={onSelect} />
+          <DivisionColumn
+            key={division.division}
+            division={division}
+            source={source}
+            profileLookup={profileLookup}
+            onSelect={onSelect}
+          />
         ))}
       </div>
     </motion.section>
   );
 }
 
-function DivisionColumn({ division, source, onSelect }) {
-  const champion = makeProfile(
-    division.champion,
-    division.division,
-    0,
-    true,
-    getRankingConfidence(source, division.division, division.champion, true),
-  );
+function DivisionColumn({ division, source, profileLookup, onSelect }) {
+  const champion = getProfileForBoard({
+    profileLookup,
+    source,
+    division: division.division,
+    name: division.champion,
+    rank: 0,
+    isChampion: true,
+  });
 
   return (
     <section className="division-card" aria-label={`${division.division} rankings`}>
@@ -1230,21 +1489,32 @@ function DivisionColumn({ division, source, onSelect }) {
         <span>{division.division}</span>
         <strong>{division.champion}</strong>
         <small>Champion</small>
-        <ChampionPortrait athlete={champion} />
       </button>
 
       <ol className="ranking-list">
-        {division.rankings.map((name, index) => {
-          const confidence = getRankingConfidence(source, division.division, name);
-          const athlete = makeProfile(name, division.division, index + 1, false, confidence);
+        {division.rankings.map((entry, index) => {
+          const name = rankingEntryName(entry);
+          const change = rankingEntryChange(entry);
+          const displayRank = rankingEntryRank(entry, index + 1);
+          const athlete = getProfileForBoard({
+            profileLookup,
+            source,
+            division: division.division,
+            name,
+            rank: displayRank,
+            isChampion: false,
+          });
           return (
             <li key={athlete.id}>
               <button type="button" onClick={() => onSelect(athlete)}>
-                <span>{index + 1}</span>
-                <strong>{name}</strong>
-                {confidence && (
-                  <em className={`confidence-badge ${confidence.level}`} title={confidence.detail}>
-                    {confidence.shortLabel}
+                <span>{displayRank}</span>
+                <strong className="ranking-name">
+                  <b>{name}</b>
+                  <RankingMovementBadge change={change} />
+                </strong>
+                {athlete.confidence && (
+                  <em className={`confidence-badge ${athlete.confidence.level}`} title={athlete.confidence.detail}>
+                    {athlete.confidence.shortLabel}
                   </em>
                 )}
               </button>
@@ -1256,13 +1526,21 @@ function DivisionColumn({ division, source, onSelect }) {
   );
 }
 
-function ChampionPortrait({ athlete, large = false }) {
+function RankingMovementBadge({ change }) {
+  if (change === null || change === undefined || change === 0) return null;
+  const isNew = change === "NR";
+  const numericChange = Number(change);
+  const direction = isNew ? "new" : numericChange > 0 ? "up" : "down";
+  const label = isNew ? "NR" : String(Math.abs(numericChange));
+  const title = isNew
+    ? "Not previously ranked"
+    : `Rank ${numericChange > 0 ? "increased" : "decreased"} by ${Math.abs(numericChange)}`;
+
   return (
-    <div className={large ? "fighter-portrait large" : "fighter-portrait"} aria-hidden="true">
-      <div className="belt" />
-      <div className="torso" />
-      <div className="head">{initials(athlete.name)}</div>
-    </div>
+    <em className={`movement-badge ${direction}`} title={title} aria-label={title}>
+      <i aria-hidden="true" />
+      {label}
+    </em>
   );
 }
 
@@ -1294,13 +1572,12 @@ function AthleteProfile({ athlete, sourceLabel, onBack }) {
             {sourceLabel} / {athlete.isChampion ? "Champion" : `Rank #${athlete.rank}`}
           </span>
         </div>
-        <ChampionPortrait athlete={athlete} large />
       </div>
 
       <div className="profile-grid">
         <section className="profile-summary">
           <div className="score-lockup">
-            <span>OctagonRank score</span>
+            <span>{athlete.scoreLabel ?? "OctagonRank score"}</span>
             <strong>{athlete.score}</strong>
           </div>
           <div className="profile-copy">
@@ -1315,13 +1592,19 @@ function AthleteProfile({ athlete, sourceLabel, onBack }) {
         </section>
 
         <section className="stat-grid" aria-label={`${athlete.name} stats`}>
-          <StatCard icon={Medal} label="Record" value={athlete.record} />
-          <StatCard icon={Trophy} label="Wins" value={athlete.wins} />
-          <StatCard icon={BarChart3} label="Sig strikes" value={athlete.sigStrikes.toLocaleString()} />
-          <StatCard icon={Crosshair} label="TKO/KOs" value={athlete.koTko} />
-          <StatCard icon={Swords} label="Submissions" value={athlete.submissions} />
-          <StatCard icon={Activity} label="Activity" value={athlete.isChampion ? "Baseline" : "Tracked"} />
+          {(athlete.statCards ?? [
+            { icon: "record", label: "Record", value: athlete.record },
+            { icon: "wins", label: "Wins", value: athlete.wins },
+            { icon: "strikes", label: "Sig strikes", value: athlete.sigStrikes.toLocaleString() },
+            { icon: "finishes", label: "TKO/KOs", value: athlete.koTko },
+            { icon: "submissions", label: "Submissions", value: athlete.submissions },
+            { icon: "activity", label: "Activity", value: athlete.isChampion ? "Baseline" : "Tracked" },
+          ]).map((card) => (
+            <StatCard key={card.label} icon={statIconMap[card.icon] ?? Activity} label={card.label} value={card.value} />
+          ))}
         </section>
+
+        {athlete.modelData && <ModelScoreTape athlete={athlete} />}
 
         {athlete.statsDetail && <FightStatsPanel stats={athlete.statsDetail} />}
 
@@ -1353,6 +1636,8 @@ function AthleteProfile({ athlete, sourceLabel, onBack }) {
             ))}
           </div>
         </section>
+
+        {athlete.modelData && <RecentFightPanel fighter={athlete.modelData} />}
       </div>
     </motion.section>
   );
@@ -1365,6 +1650,87 @@ function StatCard({ icon: Icon, label, value }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </article>
+  );
+}
+
+function ModelScoreTape({ athlete }) {
+  const fighter = athlete.modelData;
+  const positive = fighter.components?.filter((component) => component.value > 0).slice(0, 5) ?? [];
+  const penalties = fighter.penalties?.slice(0, 4) ?? [];
+  const policy = fighter.policy_components?.slice(0, 4) ?? [];
+  const scoreSteps = [
+    { label: "Fight data", value: formatScore(fighter.model_score), note: "Results, opponent level, recent form" },
+    { label: "Ranking rules", value: signed(fighter.policy_total), note: "Champions, title context, direct matchups" },
+    { label: "Final score", value: formatScore(fighter.final_score), note: "Used to order this division" },
+  ];
+
+  return (
+    <section className="model-tape" aria-label={`${athlete.name} score breakdown`}>
+      <div className="score-breakdown">
+        {scoreSteps.map((step) => (
+          <article key={step.label}>
+            <span>{step.label}</span>
+            <strong>{step.value}</strong>
+            <p>{step.note}</p>
+          </article>
+        ))}
+      </div>
+      <div className="tape-copy">
+        <div>
+          <div className="section-kicker">Score breakdown</div>
+          <h2>How this rank was built</h2>
+          <p>
+            OctagonRank starts with what happened in the cage: wins, losses, opponent quality, activity, and recent
+            form. Then it applies ranking rules for champions, title fights, direct head-to-head results, and close
+            calls in the same division.
+          </p>
+        </div>
+        <div className="component-columns">
+          <ComponentList title="Why they are high" items={positive} sign="positive" />
+          <ComponentList title="What holds them back" items={penalties} sign="negative" />
+          <ComponentList title="Ranking rules" items={policy} sign="policy" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ComponentList({ title, items, sign }) {
+  return (
+    <article className={`component-list ${sign}`}>
+      <h3>{title}</h3>
+      {items.length ? (
+        items.map((item) => (
+          <div key={item.key ?? item.label}>
+            <span>{item.label}</span>
+            <strong>{sign === "negative" ? `-${formatScore(Math.abs(item.value), 2)}` : signed(item.value)}</strong>
+          </div>
+        ))
+      ) : (
+        <p>No major entries.</p>
+      )}
+    </article>
+  );
+}
+
+function RecentFightPanel({ fighter }) {
+  return (
+    <section className="recent-panel">
+      <div className="section-kicker">Recent form</div>
+      <h2>Last five in model</h2>
+      <div className="recent-table">
+        {(fighter.last_five ?? []).map((fight) => (
+          <article key={`${fight.date}-${fight.opponent_name}`}>
+            <span className={fight.result === "W" ? "result-win" : fight.result === "L" ? "result-loss" : ""}>
+              {fight.result}
+            </span>
+            <strong>{fight.opponent_name}</strong>
+            <em>{fight.method}</em>
+            <b>{signed(fight.rating_change)}</b>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1488,7 +1854,267 @@ function TargetCard({ items }) {
   );
 }
 
-function MethodologyView() {
+function SimulatorView({ modelRankings, modelLoadState }) {
+  const divisions = modelRankings?.divisions ?? [];
+  const [divisionName, setDivisionName] = useState("");
+  const activeDivision = divisions.find((division) => division.division === (divisionName || divisions[0]?.division));
+  const fighters = activeDivision ? [activeDivision.champion, ...(activeDivision.rankings ?? [])].filter(Boolean) : [];
+  const defaultFighterAName = fighters[0]?.fighter_name ?? "";
+  const defaultFighterBName = fighters[1]?.fighter_name ?? fighters[0]?.fighter_name ?? "";
+  const [fighterAName, setFighterAName] = useState("");
+  const [fighterBName, setFighterBName] = useState("");
+  const selectedFighterAName = validFighterName(fighterAName, fighters) ?? defaultFighterAName;
+  const selectedFighterBName = validFighterName(fighterBName, fighters) ?? defaultFighterBName;
+
+  useEffect(() => {
+    if (!activeDivision || !fighters.length) return;
+    setFighterAName((current) => validFighterName(current, fighters) ?? defaultFighterAName);
+    setFighterBName((current) => validFighterName(current, fighters) ?? defaultFighterBName);
+  }, [activeDivision?.division]);
+
+  const prediction = useMemo(() => {
+    if (!activeDivision || !selectedFighterAName || !selectedFighterBName || selectedFighterAName === selectedFighterBName) return null;
+    return predictBrowserMatchup({
+      division: activeDivision,
+      fighterAName: selectedFighterAName,
+      fighterBName: selectedFighterBName,
+    });
+  }, [activeDivision, selectedFighterAName, selectedFighterBName]);
+
+  if (modelLoadState === "loading") {
+    return (
+      <motion.section className="simulator-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <div className="methodology-hero">
+          <p>Simulator</p>
+          <h1>Loading model</h1>
+          <span>Exported rankings are being loaded.</span>
+        </div>
+      </motion.section>
+    );
+  }
+
+  if (!divisions.length) {
+    return (
+      <motion.section className="simulator-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <div className="methodology-hero">
+          <p>Simulator</p>
+          <h1>No model export</h1>
+          <span>Run npm run model:export after generating rankings.</span>
+        </div>
+      </motion.section>
+    );
+  }
+
+  return (
+    <motion.section
+      className="simulator-page"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="methodology-hero">
+        <p>Matchup predictor</p>
+        <h1>Pick two fighters</h1>
+        <span>Win odds and method likelihood from the latest OctagonRank export</span>
+      </div>
+
+      <div className="simulator-layout">
+        <section className="simulator-controls">
+          <label>
+            Division
+            <select value={activeDivision?.division ?? ""} onChange={(event) => setDivisionName(event.target.value)}>
+              {divisions.map((division) => (
+                <option key={division.division} value={division.division}>
+                  {division.division}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Fighter A
+            <select value={selectedFighterAName} onChange={(event) => setFighterAName(event.target.value)}>
+              {fighters.map((fighter) => (
+                <option key={fighter.fighter_name} value={fighter.fighter_name}>
+                  {fighter.fighter_name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Fighter B
+            <select value={selectedFighterBName} onChange={(event) => setFighterBName(event.target.value)}>
+              {fighters.map((fighter) => (
+                <option key={fighter.fighter_name} value={fighter.fighter_name}>
+                  {fighter.fighter_name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="simulator-note">
+            This is a matchup read, not a manual result simulator. The model chooses the favorite and likely victory paths.
+          </p>
+        </section>
+
+        {prediction && (
+          <section className="simulation-output">
+            <div className="simulation-verdict">
+              <span>{prediction.input.division}</span>
+              <h2>{prediction.favorite.fighter_name} favored</h2>
+              <p>
+                OctagonRank gives {prediction.favorite.fighter_name} a {percent(prediction.favorite.winProbability)} chance
+                using the current exported score, recent form, opponent quality, dominance, and ranking context.
+              </p>
+            </div>
+            <div className="prediction-split">
+              {[prediction.fighterA, prediction.fighterB].map((fighter) => (
+                <article
+                  key={fighter.fighter_name}
+                  className={fighter.fighter_name === prediction.favorite.fighter_name ? "favorite" : ""}
+                >
+                  <span>{fighter.current_status || (fighter.display_rank ? `Rank #${fighter.display_rank}` : "Contender")}</span>
+                  <strong>{fighter.fighter_name}</strong>
+                  <b>{percent(fighter.winProbability)}</b>
+                  <div className="win-meter" aria-hidden="true">
+                    <i style={{ width: `${fighter.winProbability * 100}%` }} />
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="method-probability-grid">
+              <article className="method-leader">
+                <span>Most likely path</span>
+                <strong>{prediction.methodOutcomes[0].label}</strong>
+                <b>{percent(prediction.methodOutcomes[0].probability)}</b>
+              </article>
+              <article>
+                <span>Score gap</span>
+                <strong>{formatScore(Math.abs(prediction.ratingGap), 1)}</strong>
+                <p>{prediction.ratingGap >= 0 ? prediction.fighterA.fighter_name : prediction.fighterB.fighter_name} has the stronger matchup score.</p>
+              </article>
+              <article>
+                <span>Method estimate</span>
+                <strong>Prototype</strong>
+                <p>Method odds come from finish rate, knockdowns, takedowns, submission attempts, control time, and dominance.</p>
+              </article>
+            </div>
+
+            <div className="method-outcome-list">
+              {prediction.methodOutcomes.slice(0, 6).map((outcome) => (
+                <article key={outcome.label}>
+                  <span>{outcome.label}</span>
+                  <div className="method-probability-meter" aria-hidden="true">
+                    <i style={{ width: `${outcome.probability * 100}%` }} />
+                  </div>
+                  <strong>{percent(outcome.probability)}</strong>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </motion.section>
+  );
+}
+
+function validFighterName(name, fighters) {
+  return fighters.some((fighter) => fighter.fighter_name === name) ? name : null;
+}
+
+function predictBrowserMatchup({ division, fighterAName, fighterBName }) {
+  const fighters = [division.champion, ...(division.rankings ?? [])].filter(Boolean);
+  const fighterA = fighters.find((fighter) => fighter.fighter_name === fighterAName);
+  const fighterB = fighters.find((fighter) => fighter.fighter_name === fighterBName);
+  if (!fighterA || !fighterB) return null;
+
+  const ratingA = predictionRating(fighterA);
+  const ratingB = predictionRating(fighterB);
+  const fighterAWinProbability = expectedScore(ratingA, ratingB);
+  const fighterBWinProbability = 1 - fighterAWinProbability;
+  const fighterAWithPrediction = {
+    ...fighterA,
+    predictionRating: ratingA,
+    winProbability: fighterAWinProbability,
+    methodMix: methodMixForFighter(fighterA),
+  };
+  const fighterBWithPrediction = {
+    ...fighterB,
+    predictionRating: ratingB,
+    winProbability: fighterBWinProbability,
+    methodMix: methodMixForFighter(fighterB),
+  };
+  const favorite =
+    fighterAWithPrediction.winProbability >= fighterBWithPrediction.winProbability
+      ? fighterAWithPrediction
+      : fighterBWithPrediction;
+  const methodOutcomes = [
+    ...methodOutcomesFor(fighterAWithPrediction),
+    ...methodOutcomesFor(fighterBWithPrediction),
+  ].sort((a, b) => b.probability - a.probability);
+
+  return {
+    input: { division: division.division },
+    favorite,
+    fighterA: fighterAWithPrediction,
+    fighterB: fighterBWithPrediction,
+    ratingGap: round(ratingA - ratingB, 2),
+    methodOutcomes,
+  };
+}
+
+function predictionRating(fighter) {
+  return Number(fighter.final_score ?? fighter.model_score ?? fighter.base_rating ?? 1500);
+}
+
+function methodMixForFighter(fighter) {
+  const totals = fighter.totals ?? {};
+  const fights = Math.max(1, Number(fighter.wins ?? 0) + Number(fighter.losses ?? 0));
+  const wins = Math.max(1, Number(fighter.wins ?? 0));
+  const finishRate = clamp(Number(fighter.finishes ?? 0) / wins, 0.12, 0.72);
+  const knockdownsPerFight = Number(totals.knockdowns ?? 0) / fights;
+  const sigStrikesPerFight = Number(totals.sig_strikes_landed ?? 0) / fights;
+  const takedownsPerFight = Number(totals.takedowns_landed ?? 0) / fights;
+  const submissionAttemptsPerFight = Number(totals.submission_attempts ?? 0) / fights;
+  const controlPerFight = Number(totals.control_seconds ?? 0) / fights;
+  const dominanceSignal = Number(fighter.average_dominance ?? 50) / 100;
+  const roundControlSignal = Number(fighter.average_round_dominance ?? 50) / 100;
+  const koSignal = 0.38 + knockdownsPerFight * 0.22 + sigStrikesPerFight / 170 + dominanceSignal * 0.2;
+  const submissionSignal =
+    0.28 + takedownsPerFight * 0.08 + submissionAttemptsPerFight * 0.16 + controlPerFight / 1800 + roundControlSignal * 0.2;
+  const koShare = clamp(koSignal / Math.max(0.01, koSignal + submissionSignal), 0.24, 0.76);
+  const decision = round(1 - finishRate, 4);
+  const koTko = round(finishRate * koShare, 4);
+  const submission = round(Math.max(0, 1 - decision - koTko), 4);
+
+  return {
+    decision,
+    koTko,
+    submission,
+  };
+}
+
+function methodOutcomesFor(fighter) {
+  return [
+    {
+      label: `${fighter.fighter_name} by decision`,
+      probability: round(fighter.winProbability * fighter.methodMix.decision, 4),
+    },
+    {
+      label: `${fighter.fighter_name} by KO/TKO`,
+      probability: round(fighter.winProbability * fighter.methodMix.koTko, 4),
+    },
+    {
+      label: `${fighter.fighter_name} by submission`,
+      probability: round(fighter.winProbability * fighter.methodMix.submission, 4),
+    },
+  ];
+}
+
+function MethodologyView({ summary }) {
+  const methodEntries = Object.entries(summary?.methodology ?? {}).slice(0, 12);
+  const backtest = summary?.backtest_summary;
+
   return (
     <motion.section
       className="methodology-page"
@@ -1499,77 +2125,54 @@ function MethodologyView() {
     >
       <div className="methodology-hero">
         <p>Methodology</p>
-        <h1>Scoring model draft</h1>
-        <span>Placeholder until the real model is implemented</span>
+        <h1>How it ranks fighters</h1>
+        <span>{summary?.rankings_as_of ? `Model data through ${summary.rankings_as_of}` : "Static model export"}</span>
       </div>
 
       <div className="methodology-layout">
         <section className="formula-card">
           <div className="formula-topline">
             <span>Status</span>
-            <strong>Draft</strong>
+            <strong>v0.8</strong>
           </div>
-          <h2>Current methodology is placeholder text.</h2>
+          <h2>Fight results first, ranking rules second.</h2>
           <p>
-            This screen is reserved for the final ranking explanation. Once the backend model exists, this page should
-            document the exact inputs, weights, edge cases, and examples used to produce each ranking.
+            OctagonRank starts with wins, losses, opponent quality, activity, and fight stats. Then it applies a few
+            public ranking rules for champions, direct matchups, and recent title context.
           </p>
           <div className="formula-box">
-            <span>Future formula slot</span>
+            <span>Technical shape</span>
             <code>
-              final_score = base_rating + opponent_strength + fight_context + head_to_head_guardrail -
-              confidence_decay
+              final_score = model_score + current_snapshot + title_context + head_to_head + champion_guard
             </code>
           </div>
+          {backtest && (
+            <div className="method-metrics">
+              <article>
+                <span>Backtest</span>
+                <strong>{percent(backtest.accuracy)}</strong>
+              </article>
+              <article>
+                <span>Validation</span>
+                <strong>{formatScore(backtest.validation_score, 2)}</strong>
+              </article>
+              <article>
+                <span>Fights</span>
+                <strong>{backtest.fights}</strong>
+              </article>
+            </div>
+          )}
         </section>
 
         <section className="method-draft-grid" aria-label="Planned methodology sections">
-          {methodDraft.map((item) => (
-            <article key={item.title}>
+          {(methodEntries.length ? methodEntries : methodDraft.map((item) => [item.title, item.body])).map(([key, body]) => (
+            <article key={key}>
               <span>Ranking signal</span>
-              <h3>{item.title}</h3>
-              <p>{item.body}</p>
+              <h3>{key.replaceAll("_", " ")}</h3>
+              <p>{body}</p>
             </article>
           ))}
         </section>
-      </div>
-    </motion.section>
-  );
-}
-
-function AuditView({ athletes }) {
-  const reviewCount = athletes.filter((athlete) => athlete.score < 84 && !athlete.isChampion).length;
-
-  return (
-    <motion.section
-      className="audit-page"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <div className="methodology-hero">
-        <p>Audit</p>
-        <h1>Ranking checks</h1>
-        <span>Contradiction detection placeholder</span>
-      </div>
-
-      <div className="audit-board">
-        <article>
-          <ShieldAlert size={22} aria-hidden="true" />
-          <h2>Head-to-head conflicts</h2>
-          <p>Placeholder check for fighters ranked above opponents who recently beat them.</p>
-        </article>
-        <article>
-          <Dumbbell size={22} aria-hidden="true" />
-          <h2>Resume ceiling</h2>
-          <p>{reviewCount} contender profiles are currently below the review threshold.</p>
-        </article>
-        <article>
-          <BadgeCheck size={22} aria-hidden="true" />
-          <h2>Data status</h2>
-          <p>Prototype data is hardcoded. UFCStats ingestion should replace this layer later.</p>
-        </article>
       </div>
     </motion.section>
   );

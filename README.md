@@ -11,9 +11,10 @@ OctagonRank is a React-based UFC rankings prototype focused on making fighter ra
   - Media rankings
 - Animated in-page fighter profile view
 - Fighter profile summary with record, wins, significant strikes, TKO/KO wins, submissions, and activity status
-- Score explanation panel showing the ranking signals used for selected prototype fighters
+- Fan-facing fighter explanations generated from the OctagonRank model export
 - Detailed stat panel for Benoit Saint Denis, including striking accuracy, takedown accuracy, strike targets, strike positions, and win method breakdown
-- Methodology and audit pages with draft placeholder content
+- Methodology page with draft model explanations
+- Matchup predictor that lets users choose two fighters and see win odds plus likely victory paths
 
 ## Tech Stack
 
@@ -119,6 +120,26 @@ The current model also uses those review patterns for a top-contender
 credibility gate, which visibly penalizes top-five or near-top-five placements
 when recent form is not backed by elite resume, title-lineage wins, current
 snapshot support, or strong recent opponent quality.
+
+Export compact model artifacts for the static frontend:
+
+```bash
+npm run model:export
+```
+
+The export writes `public/model/rankings.json`, `public/model/explanations.json`,
+and `public/model/summary.json`. The React app loads those files directly, so it
+can run on GitHub Pages without a database or backend server.
+
+After adding new UFCStats fight files, rebuild the model and static site data in
+one pass:
+
+```bash
+npm run model:refresh
+```
+
+That command regenerates rankings, fighter explanations, audit/backtest summary
+files, and the `public/model/` JSON used by the React app.
 
 Close-score cases also use a visible snapshot-order tiebreaker so an active
 higher-snapshot contender with recent form or elite decision-loss context is
