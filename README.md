@@ -70,6 +70,27 @@ Current-division movement context lives in
 fighters from old divisions and places them in their active division before the
 ranking-policy layer runs.
 
+Run the full model-to-frontend pipeline:
+
+```bash
+npm run model:export
+```
+
+That one command validates the local UFCStats input files, rebuilds
+`data/model/rankings.json`, generates fighter explanations, runs the audit,
+diagnostics, score-band report, backtest, and ranking assertions, then exports
+the compact static JSON files used by the React app under `public/model/`.
+
+Useful variants:
+
+```bash
+npm run model:export -- --build-site
+npm run model:export -- --as-of=2025-12-31
+npm run model:export -- --skip-backtest
+```
+
+Use the lower-level commands below when debugging one stage of the pipeline.
+
 Build the ranking-policy model:
 
 ```bash
@@ -88,8 +109,9 @@ npm run model:audit
 
 The audit checks champion placement, title-context rules, recent head-to-head
 violations, inactive top-ranked fighters, old-opponent over-credit, thin
-top-15 entries, large policy adjustments, and data-quality issues such as
-duplicate snapshot entries or unexplained division transfers.
+top-15 entries, large rescue policy adjustments, baseline context priors, and
+data-quality issues such as duplicate snapshot entries or unexplained division
+transfers.
 
 Generate a readable review report after the audit, diagnostics, and score-band
 checks:
@@ -121,25 +143,25 @@ credibility gate, which visibly penalizes top-five or near-top-five placements
 when recent form is not backed by elite resume, title-lineage wins, current
 snapshot support, or strong recent opponent quality.
 
-Export compact model artifacts for the static frontend:
+Export only the compact model artifacts for the static frontend:
 
 ```bash
-npm run model:export
+npm run model:publish
 ```
 
-The export writes `public/model/rankings.json`, `public/model/explanations.json`,
-and `public/model/summary.json`. The React app loads those files directly, so it
-can run on GitHub Pages without a database or backend server.
+This lower-level export assumes `data/model/` already exists. It writes
+`public/model/rankings.json`, `public/model/explanations.json`, and
+`public/model/summary.json`. The React app loads those files directly, so it can
+run on GitHub Pages without a database or backend server.
 
 After adding new UFCStats fight files, rebuild the model and static site data in
 one pass:
 
 ```bash
-npm run model:refresh
+npm run model:export
 ```
 
-That command regenerates rankings, fighter explanations, audit/backtest summary
-files, and the `public/model/` JSON used by the React app.
+`npm run model:refresh` is kept as an alias for the same pipeline.
 
 Close-score cases also use a visible snapshot-order tiebreaker so an active
 higher-snapshot contender with recent form or elite decision-loss context is

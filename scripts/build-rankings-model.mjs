@@ -38,8 +38,8 @@ const SCORE_BAND_CLOSE_THRESHOLD = 8;
 const DEFAULT_MODEL_CONFIG = {
   name: "default",
   weights: {
-    recent_form: 1,
-    recent_outcome: 1,
+    recent_form: 0.9,
+    recent_outcome: 0.9,
     schedule_strength: 1,
     recent_activity: 1,
     dominance: 1,
@@ -261,7 +261,7 @@ async function main() {
   );
 
   const output = {
-    model_version: "v0.8.5-score-confidence",
+    model_version: "v0.8.6-less-recent-form",
     generated_at: new Date().toISOString(),
     as_of: toIsoDate(asOfDate),
     source: summary.source ?? "ufcstats.com",

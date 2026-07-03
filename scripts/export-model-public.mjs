@@ -431,7 +431,7 @@ function printHelp() {
   console.log(`Export compact model artifacts for the static frontend.
 
 Usage:
-  npm run model:export
+  npm run model:publish
   node scripts/export-model-public.mjs --model-dir=data/model --out-dir=public/model
 
 Options:

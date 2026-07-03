@@ -153,11 +153,10 @@ Example custom weight file:
 
 ```json
 {
-  "name": "more_recent_form",
+  "name": "less_recent_form",
   "weights": {
-    "recent_form": 1.1,
-    "recent_outcome": 1.05,
-    "rank_guard_strength": 0.9
+    "recent_form": 0.9,
+    "recent_outcome": 0.9
   }
 }
 ```
@@ -181,14 +180,17 @@ After the v0.8 changes:
 - inactive top-ranked flags: `0`
 - low-sample overboost flags: `0`
 - old-opponent over-credit flags: `0`
-- large policy adjustments: `51`
+- large rescue policy adjustments: `9`
+- large baseline context priors: `30`
 
 The justified elite snapshot drift bucket covers fighters whose current
 snapshot slot is high, but whose latest finish losses, recent losses, weak
-schedule, or legacy decay explain why the model moved them down. The remaining
-large policy adjustment bucket is a review bucket, not a correctness failure;
-it shows where ranking policy is doing substantial work beyond the pure model
-score.
+schedule, or legacy decay explain why the model moved them down. The large
+rescue policy bucket is a review bucket, not a correctness failure; it shows
+where title context, rank guards, snapshot tiebreakers, or similar ranking
+policy are doing substantial work beyond the pure model score. Large baseline
+context priors are reported separately because champion/current-snapshot priors
+are expected explainability signals, not tuning failures.
 
 ## Diagnostics
 
@@ -204,35 +206,37 @@ systematic pressure.
 
 Current diagnostics summary:
 
-- bias flags: `5`
-- fragile fighters with 3+ rank movement: `4`
-- max local sensitivity move: `3`
-- most sensitive component: `recent form plus_10pct`
+- bias flags: `4`
+- fragile fighters with 3+ rank movement: `0`
+- max local sensitivity move: `2`
+- most sensitive component: `recent form minus_10pct`
 
 ## Current Backtest Snapshot
 
 The first backtest checks fights since `2024-01-01` and asks whether the
 higher-rated pre-fight fighter won.
 
-- fights tested: `1255`
-- correct favorite wins: `733`
-- accuracy: `58.4%`
-- underdog wins: `522`
+- fights tested: `1268`
+- correct favorite wins: `763`
+- accuracy: `60.2%`
+- underdog wins: `506`
 
 This is not a final predictive model yet, but it gives the project a real
 validation metric to improve against.
 
 ## Current Tuning Snapshot
 
-The latest full tuning sweep tested `18` predefined candidates.
+The latest full tuning sweep tested `21` predefined candidates.
 
-- best candidate: `more_recent_form`
-- score: `545.10`
-- backtest accuracy: `58.4%`
+- best candidate: `baseline` (current v0.8.6 default)
+- score: `483.76`
+- backtest accuracy: `60.2%`
 - hard audit failures: `0`
-- soft audit flags: `0`
+- assertion failures: `0`
 - fragile fighters: `0`
 
-The default model remains the baseline. The tuning result suggests the next
-serious experiment should slightly reduce schedule-strength pressure, then
-compare the affected divisions manually before promoting it to the default.
+The `less_recent_form` candidate remains promoted as the default v0.8.6 model.
+After splitting expected baseline priors from true rescue adjustments, the
+current default ranks first in the tuning sweep with no hard audit failures,
+no assertion failures, `0` fragile fighters, max local rank movement of `2`,
+and `9` large rescue policy adjustments.

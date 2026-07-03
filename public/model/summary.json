@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-02T00:06:07.459Z",
+  "generated_at": "2026-07-03T01:37:05.024Z",
   "rankings_as_of": "2026-06-30",
-  "model_version": "v0.8.5-score-confidence",
+  "model_version": "v0.8.6-less-recent-form",
   "source": "ufcstats.com",
   "model_summary": {
-    "generated_at": "2026-07-01T22:53:13.557Z",
+    "generated_at": "2026-07-03T01:37:04.363Z",
     "as_of": "2026-06-30",
     "processed_fights": 8272,
     "skipped_fights": 149,
@@ -86,11 +86,12 @@
     "title_context_failures": 0,
     "recent_head_to_head_violations": 0,
     "elite_snapshot_drift": 0,
-    "justified_elite_snapshot_drift": 5,
+    "justified_elite_snapshot_drift": 4,
     "inactive_top_ranked": 0,
     "prospect_overboost": 0,
     "old_opponent_overcredit": 0,
-    "large_policy_adjustments": 54,
+    "large_policy_adjustments": 9,
+    "large_baseline_policy_adjustments": 30,
     "data_quality_flags": 0
   }
 }

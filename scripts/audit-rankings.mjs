@@ -53,6 +53,7 @@ function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, div
     prospect_overboost: [],
     old_opponent_overcredit: [],
     large_policy_adjustments: [],
+    large_baseline_policy_adjustments: [],
     data_quality: buildSnapshotDataQualityChecks(currentSnapshot),
   };
   const asOfDate = new Date(rankings.as_of);
@@ -143,18 +144,53 @@ function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, div
       }
 
       const policyAdjustments = {
+        current_context_prior: num(fighter.current_context_prior),
         current_context_adjustment: num(fighter.current_context_adjustment),
         title_context_adjustment: num(fighter.title_context_adjustment),
         rank_guard_adjustment: num(fighter.rank_guard_adjustment),
         head_to_head_adjustment: num(fighter.head_to_head_adjustment),
+        snapshot_order_adjustment: num(fighter.snapshot_order_adjustment),
         title_guard_adjustment: num(fighter.title_guard_adjustment),
+        entry_gate_penalty: -num(fighter.entry_gate_penalty),
+        top_contender_credibility_penalty: -num(fighter.top_contender_credibility_penalty),
       };
-      if (Object.values(policyAdjustments).some((value) => Math.abs(value) >= 50)) {
+
+      const rescuePolicyAdjustments = {
+        title_context_adjustment: policyAdjustments.title_context_adjustment,
+        rank_guard_adjustment: policyAdjustments.rank_guard_adjustment,
+        head_to_head_adjustment: policyAdjustments.head_to_head_adjustment,
+        snapshot_order_adjustment: policyAdjustments.snapshot_order_adjustment,
+        title_guard_adjustment: policyAdjustments.title_guard_adjustment,
+        entry_gate_penalty: policyAdjustments.entry_gate_penalty,
+        top_contender_credibility_penalty: policyAdjustments.top_contender_credibility_penalty,
+      };
+      const rescuePolicyTotal = Object.values(rescuePolicyAdjustments).reduce((total, value) => total + value, 0);
+      const largeRescueComponent = Object.entries(rescuePolicyAdjustments)
+        .filter(([, value]) => Math.abs(value) >= 50)
+        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0];
+
+      if (largeRescueComponent || Math.abs(rescuePolicyTotal) >= 50) {
         checks.large_policy_adjustments.push({
           division: division.division,
           rank: fighter.rank,
           fighter: fighter.fighter_name,
+          rescue_policy_adjustment: round(rescuePolicyTotal, 2),
+          primary_large_component: largeRescueComponent?.[0] ?? "combined_rescue_policy",
           ...policyAdjustments,
+        });
+      }
+
+      if (
+        Math.abs(policyAdjustments.current_context_prior) >= 50 &&
+        !largeRescueComponent &&
+        Math.abs(rescuePolicyTotal) < 50
+      ) {
+        checks.large_baseline_policy_adjustments.push({
+          division: division.division,
+          rank: fighter.rank,
+          fighter: fighter.fighter_name,
+          current_context_prior: policyAdjustments.current_context_prior,
+          current_context_adjustment: policyAdjustments.current_context_adjustment,
         });
       }
 
@@ -238,6 +274,7 @@ function buildAudit({ rankings, fightImpacts, titleContext, currentSnapshot, div
       prospect_overboost: checks.prospect_overboost.length,
       old_opponent_overcredit: checks.old_opponent_overcredit.length,
       large_policy_adjustments: checks.large_policy_adjustments.length,
+      large_baseline_policy_adjustments: checks.large_baseline_policy_adjustments.length,
       data_quality_flags: checks.data_quality.length,
     },
     checks,
@@ -472,4 +509,9 @@ function num(value) {
   if (value === null || value === undefined || value === "") return 0;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function round(value, precision = 2) {
+  const factor = 10 ** precision;
+  return Math.round(num(value) * factor) / factor;
 }

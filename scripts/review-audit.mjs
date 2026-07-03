@@ -188,20 +188,36 @@ function flaggedIssuesSection(audit) {
       "No old-opponent over-credit flags.",
     ),
     issueTable(
-      "## Large Policy Adjustments",
+      "## Large Rescue Policy Adjustments",
       checks.large_policy_adjustments ?? [],
-      ["Division", "Rank", "Fighter", "Current", "Title", "Rank Guard", "H2H", "Title Guard"],
+      ["Division", "Rank", "Fighter", "Rescue Total", "Primary", "Title", "Rank Guard", "H2H", "Snapshot", "Title Guard", "Entry Gate"],
       (row) => [
         row.division,
         row.rank,
         row.fighter,
-        fmtSigned(row.current_context_adjustment),
+        fmtSigned(row.rescue_policy_adjustment),
+        humanizeKey(row.primary_large_component || "combined_rescue_policy"),
         fmtSigned(row.title_context_adjustment),
         fmtSigned(row.rank_guard_adjustment),
         fmtSigned(row.head_to_head_adjustment),
+        fmtSigned(row.snapshot_order_adjustment),
         fmtSigned(row.title_guard_adjustment),
+        fmtSigned(row.entry_gate_penalty),
       ],
-      "No large policy adjustments.",
+      "No large rescue policy adjustments.",
+    ),
+    issueTable(
+      "## Large Baseline Context Priors",
+      checks.large_baseline_policy_adjustments ?? [],
+      ["Division", "Rank", "Fighter", "Context Prior", "Current Adjustment"],
+      (row) => [
+        row.division,
+        row.rank,
+        row.fighter,
+        fmtSigned(row.current_context_prior),
+        fmtSigned(row.current_context_adjustment),
+      ],
+      "No large baseline context priors.",
     ),
     issueTable(
       "## Data Quality Flags",
@@ -377,7 +393,10 @@ function nextTuningSection(audit, diagnostics, scoreBands) {
     items.push("Separate legitimate inactivity from ranking decay by adding a tiny source-backed layoff context file later.");
   }
   if (num(summary.large_policy_adjustments) > 0) {
-    items.push("Audit large policy adjustments so the resume story stays honest: model score and ranking policy should remain visibly separate.");
+    items.push("Audit large rescue policy adjustments so the resume story stays honest: model score and ranking policy should remain visibly separate.");
+  }
+  if (num(summary.large_baseline_policy_adjustments) > 0) {
+    items.push("Review large baseline context priors only as explainability checks; these are expected champion/current-snapshot priors, not tuning failures.");
   }
   if (num(summary.data_quality_flags) > 0) {
     items.push("Fix data-quality flags before formula tuning; duplicated snapshot entries and unexplained division transfers can create fake ranking problems.");
