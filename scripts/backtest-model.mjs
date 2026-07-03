@@ -52,8 +52,11 @@ function buildBacktest({ fightImpacts, rankings, since }) {
       const rawRatingGap = round(num(impact.winner_pre_rating) - num(impact.loser_pre_rating), 2);
       const ratingGap = round(num(impact.contextual_rating_gap ?? rawRatingGap), 2);
       const expectedWinner = clamp(num(impact.expected_winner), 0.001, 0.999);
+      const rawExpectedWinner = clamp(expectedScoreFromGap(rawRatingGap), 0.001, 0.999);
       const predictedWinnerWon = expectedWinner >= 0.5;
+      const rawPredictedWinnerWon = rawExpectedWinner >= 0.5;
       const favoriteProbability = round(Math.max(expectedWinner, 1 - expectedWinner), 4);
+      const rawFavoriteProbability = round(Math.max(rawExpectedWinner, 1 - rawExpectedWinner), 4);
       const favoriteName = predictedWinnerWon ? impact.winner_name : impact.loser_name;
       const underdogName = predictedWinnerWon ? impact.loser_name : impact.winner_name;
       return {
@@ -61,14 +64,21 @@ function buildBacktest({ fightImpacts, rankings, since }) {
         rating_gap: ratingGap,
         raw_rating_gap: rawRatingGap,
         expected_winner_probability: expectedWinner,
+        raw_expected_winner_probability: rawExpectedWinner,
         favorite_probability: favoriteProbability,
+        raw_favorite_probability: rawFavoriteProbability,
         favorite_name: favoriteName,
         underdog_name: underdogName,
         predicted_winner_won: predictedWinnerWon,
+        raw_predicted_winner_won: rawPredictedWinnerWon,
         upset: !predictedWinnerWon,
+        raw_upset: !rawPredictedWinnerWon,
         brier_score: round((1 - expectedWinner) ** 2, 4),
+        raw_brier_score: round((1 - rawExpectedWinner) ** 2, 4),
         log_loss: round(-Math.log(expectedWinner), 4),
+        raw_log_loss: round(-Math.log(rawExpectedWinner), 4),
         favorite_confidence_bucket: favoriteConfidenceBucket(favoriteProbability),
+        raw_favorite_confidence_bucket: favoriteConfidenceBucket(rawFavoriteProbability),
         method_bucket: methodBucket(impact.method),
       };
     });
@@ -90,6 +100,15 @@ function buildBacktest({ fightImpacts, rankings, since }) {
   const confidenceBuckets = buildFavoriteConfidenceBuckets(eligible);
   const fightContextBuckets = buildFightContextBuckets(eligible);
   const methodBuckets = buildMethodBuckets(eligible);
+  const baselines = buildBaselineComparisons(eligible);
+  const titleContextValidation = buildTitleContextValidation(eligible);
+  const modelMisses = buildModelMisses(eligible);
+  const answers = buildQuestionAnswers({
+    rows: eligible,
+    baselines,
+    titleContextValidation,
+    divisionRankings: division_rankings,
+  });
 
   const upsets = eligible
     .filter((impact) => impact.upset)
@@ -116,6 +135,23 @@ function buildBacktest({ fightImpacts, rankings, since }) {
     rankings_as_of: rankings?.as_of ?? "unknown",
     since,
     summary: summarize(eligible),
+    answers,
+    baselines,
+    title_context_validation: titleContextValidation,
+    external_rankings_comparison: {
+      media_rankings: {
+        status: "needs_historical_snapshots",
+        can_backtest: false,
+        detail:
+          "Current media rankings cannot be used as a fair historical predictor. Add dated media-ranking snapshots before each event to compare OctagonRank against media rankings.",
+      },
+      meta_rankings: {
+        status: "needs_historical_snapshots",
+        can_backtest: false,
+        detail:
+          "Current Meta rankings are useful for the live comparison board, but backtesting requires dated snapshots from before each fight.",
+      },
+    },
     divisions,
     division_rankings,
     years,
@@ -123,21 +159,45 @@ function buildBacktest({ fightImpacts, rankings, since }) {
     favorite_confidence_buckets: confidenceBuckets,
     fight_context_buckets: fightContextBuckets,
     method_buckets: methodBuckets,
+    biggest_model_misses: modelMisses,
     largest_rating_upsets: upsets,
   };
 }
 
 function summarize(rows) {
+  return summarizePrediction(rows, {
+    probabilityKey: "expected_winner_probability",
+    confidenceKey: "favorite_probability",
+    predictedKey: "predicted_winner_won",
+    gapKey: "rating_gap",
+    brierKey: "brier_score",
+    logLossKey: "log_loss",
+  });
+}
+
+function summarizeRaw(rows) {
+  return summarizePrediction(rows, {
+    probabilityKey: "raw_expected_winner_probability",
+    confidenceKey: "raw_favorite_probability",
+    predictedKey: "raw_predicted_winner_won",
+    gapKey: "raw_rating_gap",
+    brierKey: "raw_brier_score",
+    logLossKey: "raw_log_loss",
+  });
+}
+
+function summarizePrediction(rows, keys) {
   const total = rows.length;
-  const correct = rows.filter((row) => row.predicted_winner_won).length;
+  const correct = rows.filter((row) => Boolean(row[keys.predictedKey])).length;
   const accuracy = total > 0 ? correct / total : 0;
-  const averageWinnerGap = total > 0 ? rows.reduce((sum, row) => sum + row.rating_gap, 0) / total : 0;
-  const averageFavoriteProbability = average(rows, (row) => row.favorite_probability);
-  const brierScore = average(rows, (row) => row.brier_score);
-  const logLoss = average(rows, (row) => row.log_loss);
+  const averageWinnerGap = total > 0 ? rows.reduce((sum, row) => sum + num(row[keys.gapKey]), 0) / total : 0;
+  const averageFavoriteProbability = average(rows, (row) => row[keys.confidenceKey]);
+  const averageWinnerProbability = average(rows, (row) => row[keys.probabilityKey]);
+  const brierScore = average(rows, (row) => row[keys.brierKey]);
+  const logLoss = average(rows, (row) => row[keys.logLossKey]);
   const calibrationError = total > 0 ? Math.abs(accuracy - averageFavoriteProbability) : 0;
-  const favorites = rows.filter((row) => row.rating_gap >= 0);
-  const underdogs = rows.filter((row) => row.rating_gap < 0);
+  const favorites = rows.filter((row) => Boolean(row[keys.predictedKey]));
+  const underdogs = rows.filter((row) => !Boolean(row[keys.predictedKey]));
 
   return {
     fights: total,
@@ -145,6 +205,7 @@ function summarize(rows) {
     accuracy: round(accuracy, 4),
     expected_correct: round(total * averageFavoriteProbability, 2),
     average_favorite_probability: round(averageFavoriteProbability, 4),
+    average_winner_probability: round(averageWinnerProbability, 4),
     calibration_error: round(calibrationError, 4),
     brier_score: round(brierScore, 4),
     log_loss: round(logLoss, 4),
@@ -154,6 +215,126 @@ function summarize(rows) {
     underdog_wins: underdogs.length,
     underdog_win_rate: round(underdogs.length / Math.max(1, total), 4),
   };
+}
+
+function buildBaselineComparisons(rows) {
+  const octagonRank = {
+    key: "octagonrank_context",
+    label: "OctagonRank context model",
+    description: "Context-aware pre-fight probability using rating, opponent quality, and fight-context adjustments.",
+    ...summarize(rows),
+  };
+  const rawElo = {
+    key: "raw_elo_only",
+    label: "Raw Elo-only baseline",
+    description: "Same fight sample using only pre-fight Elo rating gap before context adjustments.",
+    ...summarizeRaw(rows),
+  };
+  const coinFlip = {
+    key: "coin_flip",
+    label: "Coin-flip baseline",
+    description: "A naive benchmark: every fight is treated as 50/50.",
+    fights: rows.length,
+    accuracy: 0.5,
+    expected_correct: round(rows.length * 0.5, 2),
+    average_favorite_probability: 0.5,
+    average_winner_probability: 0.5,
+    calibration_error: 0,
+    brier_score: 0.25,
+    log_loss: round(Math.log(2), 4),
+    validation_score: validationScore({
+      accuracy: 0.5,
+      brierScore: 0.25,
+      logLoss: Math.log(2),
+      calibrationError: 0,
+    }),
+  };
+
+  return {
+    primary: octagonRank,
+    baselines: [rawElo, coinFlip],
+    deltas: [
+      deltaAgainst(octagonRank, rawElo),
+      deltaAgainst(octagonRank, coinFlip),
+    ],
+  };
+}
+
+function deltaAgainst(primary, baseline) {
+  return {
+    baseline: baseline.key,
+    label: `${primary.label} vs ${baseline.label}`,
+    accuracy_delta: round(num(primary.accuracy) - num(baseline.accuracy), 4),
+    brier_delta: round(num(primary.brier_score) - num(baseline.brier_score), 4),
+    log_loss_delta: round(num(primary.log_loss) - num(baseline.log_loss), 4),
+    validation_score_delta: round(num(primary.validation_score) - num(baseline.validation_score), 2),
+  };
+}
+
+function buildTitleContextValidation(rows) {
+  const titleContextRows = rows.filter((row) => Boolean(row.winner_title_context || row.loser_title_context));
+  const titleContextWinnerRows = rows.filter((row) => Boolean(row.winner_title_context));
+  const titleContextLoserRows = rows.filter((row) => Boolean(row.loser_title_context));
+  const titleContextReasonRows = rows.filter((row) => String(row.opponent_context_reason ?? "").includes("title_context"));
+
+  return {
+    title_context_fights: summarize(titleContextRows),
+    title_context_winner_sample: summarize(titleContextWinnerRows),
+    title_context_loser_sample: summarize(titleContextLoserRows),
+    title_context_reason_sample: summarize(titleContextReasonRows),
+    interpretation:
+      "This checks whether title-context fighters and title-lineage wins behave sensibly in historical fight prediction. It is not a title-shot correctness test by itself.",
+  };
+}
+
+function buildQuestionAnswers({ rows, baselines, titleContextValidation, divisionRankings }) {
+  const leastStableDivisions = [...divisionRankings]
+    .sort((a, b) => b.underdog_win_rate - a.underdog_win_rate || b.calibration_error - a.calibration_error)
+    .slice(0, 5)
+    .map((division) => ({
+      division: division.division,
+      fights: division.fights,
+      accuracy: division.accuracy,
+      underdog_win_rate: division.underdog_win_rate,
+      calibration_error: division.calibration_error,
+    }));
+  const rawDelta = baselines.deltas.find((delta) => delta.baseline === "raw_elo_only");
+
+  return {
+    higher_rated_fighters_win_more:
+      `Yes. OctagonRank favorites won ${pct(baselines.primary.accuracy)} of ${rows.length} tested fights since this backtest start date.`,
+    octagonrank_vs_raw_baseline:
+      rawDelta && rawDelta.accuracy_delta >= 0
+        ? `OctagonRank beat the raw Elo-only baseline by ${pct(rawDelta.accuracy_delta)} accuracy points on this sample.`
+        : `OctagonRank trailed the raw Elo-only baseline by ${pct(Math.abs(rawDelta?.accuracy_delta ?? 0))} accuracy points on this sample.`,
+    octagonrank_vs_media_rankings:
+      "Not proven yet. A fair comparison needs dated media-ranking snapshots from before each fight; current rankings would leak future information.",
+    title_context_check:
+      `Title-context fights in the sample tested at ${pct(titleContextValidation.title_context_fights.accuracy)} favorite accuracy across ${titleContextValidation.title_context_fights.fights} fights.`,
+    most_unstable_divisions: leastStableDivisions,
+  };
+}
+
+function buildModelMisses(rows) {
+  return rows
+    .filter((row) => row.upset)
+    .sort((a, b) => b.log_loss - a.log_loss || b.favorite_probability - a.favorite_probability)
+    .slice(0, 25)
+    .map((row) => ({
+      date: row.event_date,
+      division: row.division,
+      predicted_winner: row.favorite_name,
+      actual_winner: row.winner_name,
+      loser: row.loser_name,
+      method: row.method,
+      favorite_probability: row.favorite_probability,
+      expected_winner_probability: row.expected_winner_probability,
+      rating_gap: row.rating_gap,
+      raw_rating_gap: row.raw_rating_gap,
+      brier_score: row.brier_score,
+      log_loss: row.log_loss,
+      context_note: row.opponent_context_reason || row.repeatability_reason || "",
+    }));
 }
 
 function buildRatingGapBuckets(rows) {
@@ -266,6 +447,29 @@ function reliabilityLabel(rows) {
 }
 
 function buildMarkdownReport(report) {
+  const answerRows = Object.entries(report.answers ?? {})
+    .filter(([, answer]) => typeof answer === "string")
+    .map(([question, answer]) => [humanizeKey(question), answer]);
+  const baselineRows = [
+    report.baselines.primary,
+    ...(report.baselines.baselines ?? []),
+  ].map((baseline) => [
+    baseline.label,
+    baseline.fights,
+    pct(baseline.accuracy),
+    pct(baseline.average_favorite_probability),
+    pct(baseline.calibration_error),
+    fmt(baseline.brier_score),
+    fmt(baseline.log_loss),
+    fmt(baseline.validation_score),
+  ]);
+  const deltaRows = (report.baselines.deltas ?? []).map((delta) => [
+    delta.label,
+    pct(delta.accuracy_delta),
+    fmt(delta.brier_delta),
+    fmt(delta.log_loss_delta),
+    fmt(delta.validation_score_delta),
+  ]);
   const divisionRows = report.division_rankings.map((division) => [
     division.division,
     division.fights,
@@ -306,6 +510,17 @@ function buildMarkdownReport(report) {
     fmt(bucket.brier_score),
     fmt(bucket.log_loss),
   ]);
+  const titleRows = Object.entries(report.title_context_validation ?? {})
+    .filter(([, value]) => value && typeof value === "object" && "fights" in value)
+    .map(([key, row]) => [
+      humanizeKey(key),
+      row.fights,
+      pct(row.accuracy),
+      pct(row.average_favorite_probability),
+      pct(row.calibration_error),
+      fmt(row.brier_score),
+      fmt(row.log_loss),
+    ]);
   const methodRows = report.method_buckets.map((bucket) => [
     bucket.method,
     bucket.fights,
@@ -331,6 +546,16 @@ function buildMarkdownReport(report) {
     fmt(upset.rating_gap),
     upset.method,
   ]);
+  const missRows = (report.biggest_model_misses ?? []).slice(0, 15).map((miss) => [
+    miss.date,
+    miss.division,
+    miss.predicted_winner,
+    miss.actual_winner,
+    pct(miss.favorite_probability),
+    fmt(miss.rating_gap),
+    fmt(miss.log_loss),
+    miss.method,
+  ]);
 
   return [
     "# OctagonRank Backtest",
@@ -351,6 +576,32 @@ function buildMarkdownReport(report) {
     `- log loss: \`${fmt(report.summary.log_loss)}\``,
     `- underdog wins: \`${report.summary.underdog_wins}\``,
     `- average winner rating gap: \`${fmt(report.summary.average_winner_rating_gap)}\``,
+    "",
+    markdownTable(
+      "## Direct Answers",
+      ["Question", "Answer"],
+      answerRows,
+      "No direct-answer rows.",
+    ),
+    "",
+    markdownTable(
+      "## Baseline Comparison",
+      ["Model", "Fights", "Accuracy", "Avg Fav Prob", "Calibration Error", "Brier", "Log Loss", "Validation Score"],
+      baselineRows,
+      "No baseline rows.",
+    ),
+    "",
+    markdownTable(
+      "## Baseline Deltas",
+      ["Comparison", "Accuracy Delta", "Brier Delta", "Log Loss Delta", "Validation Delta"],
+      deltaRows,
+      "No baseline deltas.",
+    ),
+    "",
+    "## External Ranking Comparison",
+    "",
+    `- Media rankings: \`${report.external_rankings_comparison.media_rankings.status}\` - ${report.external_rankings_comparison.media_rankings.detail}`,
+    `- Meta rankings: \`${report.external_rankings_comparison.meta_rankings.status}\` - ${report.external_rankings_comparison.meta_rankings.detail}`,
     "",
     markdownTable(
       "## Division Validation",
@@ -381,6 +632,13 @@ function buildMarkdownReport(report) {
     ),
     "",
     markdownTable(
+      "## Title-Context Validation",
+      ["Sample", "Fights", "Accuracy", "Avg Fav Prob", "Calibration Error", "Brier", "Log Loss"],
+      titleRows,
+      "No title-context rows.",
+    ),
+    "",
+    markdownTable(
       "## Method Validation",
       ["Method", "Fights", "Accuracy", "Avg Fav Prob", "Calibration Error", "Brier", "Log Loss"],
       methodRows,
@@ -399,6 +657,13 @@ function buildMarkdownReport(report) {
       ["Date", "Division", "Winner", "Loser", "Winner Rating Gap", "Method"],
       upsetRows,
       "No upsets found.",
+    ),
+    "",
+    markdownTable(
+      "## Biggest Model Misses",
+      ["Date", "Division", "Predicted Winner", "Actual Winner", "Favorite Prob", "Winner Rating Gap", "Log Loss", "Method"],
+      missRows,
+      "No model misses found.",
     ),
     "",
   ].join("\n");
@@ -432,6 +697,10 @@ function methodBucket(method) {
   if (value.includes("ko") || value.includes("tko") || value.includes("doctor")) return "KO/TKO";
   if (value.includes("submission")) return "Submission";
   return "Other";
+}
+
+function expectedScoreFromGap(gap) {
+  return 1 / (1 + 10 ** (-num(gap) / 400));
 }
 
 function average(rows, valueFn) {
@@ -517,6 +786,12 @@ function escapeMarkdownCell(value) {
     .replace(/\|/g, "\\|")
     .replace(/\n+/g, " ")
     .trim();
+}
+
+function humanizeKey(key) {
+  return String(key)
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function pct(value) {

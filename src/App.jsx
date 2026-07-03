@@ -813,6 +813,7 @@ const modelUrls = {
   rankings: `${import.meta.env.BASE_URL}model/rankings.json`,
   explanations: `${import.meta.env.BASE_URL}model/explanations.json`,
   summary: `${import.meta.env.BASE_URL}model/summary.json`,
+  evaluation: `${import.meta.env.BASE_URL}model/evaluation.json`,
 };
 
 const statIconMap = {
@@ -1265,6 +1266,12 @@ function percent(value) {
   return `${(parsed * 100).toFixed(1)}%`;
 }
 
+function signedPercent(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "";
+  return `${parsed >= 0 ? "+" : ""}${(parsed * 100).toFixed(1)}%`;
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -1284,22 +1291,30 @@ export default function App() {
   const [selectedAthlete, setSelectedAthlete] = useState(null);
   const [modelRankings, setModelRankings] = useState(null);
   const [modelSummary, setModelSummary] = useState(null);
+  const [modelEvaluation, setModelEvaluation] = useState(null);
   const [modelLoadState, setModelLoadState] = useState("loading");
 
   useEffect(() => {
     let cancelled = false;
     async function loadModelArtifacts() {
       try {
-        const [rankingsResponse, summaryResponse] = await Promise.all([
+        const [rankingsResponse, summaryResponse, evaluationResponse] = await Promise.all([
           fetch(modelUrls.rankings),
           fetch(modelUrls.summary),
+          fetch(modelUrls.evaluation),
         ]);
         if (!rankingsResponse.ok) throw new Error(`Could not load ${modelUrls.rankings}`);
         if (!summaryResponse.ok) throw new Error(`Could not load ${modelUrls.summary}`);
-        const [rankings, summary] = await Promise.all([rankingsResponse.json(), summaryResponse.json()]);
+        if (!evaluationResponse.ok) throw new Error(`Could not load ${modelUrls.evaluation}`);
+        const [rankings, summary, evaluation] = await Promise.all([
+          rankingsResponse.json(),
+          summaryResponse.json(),
+          evaluationResponse.json(),
+        ]);
         if (!cancelled) {
           setModelRankings(rankings);
           setModelSummary(summary);
+          setModelEvaluation(evaluation);
           setModelLoadState("ready");
         }
       } catch (error) {
@@ -1372,6 +1387,16 @@ export default function App() {
               Methodology
             </button>
             <button
+              className={activeView === "evaluation" ? "nav-tab active" : "nav-tab"}
+              type="button"
+              onClick={() => {
+                setActiveView("evaluation");
+                setSelectedAthlete(null);
+              }}
+            >
+              Evaluation
+            </button>
+            <button
               className={activeView === "simulator" ? "nav-tab active" : "nav-tab"}
               type="button"
               onClick={() => {
@@ -1409,6 +1434,10 @@ export default function App() {
           )}
 
           {activeView === "methodology" && <MethodologyView key="methodology-view" summary={modelSummary} />}
+
+          {activeView === "evaluation" && (
+            <EvaluationView key="evaluation-view" evaluation={modelEvaluation} modelLoadState={modelLoadState} />
+          )}
 
           {activeView === "simulator" && (
             <SimulatorView key="simulator-view" modelRankings={modelRankings} modelLoadState={modelLoadState} />
@@ -1854,6 +1883,199 @@ function TargetCard({ items }) {
   );
 }
 
+function EvaluationView({ evaluation, modelLoadState }) {
+  const summary = evaluation?.summary ?? {};
+  const primary = evaluation?.baselines?.primary;
+  const baselineRows = [primary, ...(evaluation?.baselines?.baselines ?? [])].filter(Boolean);
+  const rawDelta = evaluation?.baselines?.deltas?.find((delta) => delta.baseline === "raw_elo_only");
+  const confidenceBuckets = evaluation?.calibration?.favorite_confidence_buckets ?? [];
+  const unstableBacktest = evaluation?.divisions?.unstable_by_backtest ?? [];
+  const unstableBands = evaluation?.divisions?.unstable_by_score_band ?? [];
+  const misses = evaluation?.biggest_model_misses ?? [];
+  const mediaComparison = evaluation?.external_rankings_comparison?.media_rankings;
+  const titleContext = evaluation?.title_context_validation?.title_context_fights;
+
+  const scorecard = [
+    {
+      label: "Favorite accuracy",
+      value: percent(summary.accuracy),
+      note: `${summary.fights ?? 0} fights tested since 2024`,
+    },
+    {
+      label: "Upset rate",
+      value: percent(summary.upset_rate),
+      note: "Lower-probability fighter won",
+    },
+    {
+      label: "Raw Elo lift",
+      value: rawDelta ? signedPercent(rawDelta.accuracy_delta) : "n/a",
+      note: "Accuracy delta versus raw pre-fight Elo",
+    },
+    {
+      label: "Calibration error",
+      value: percent(summary.calibration_error),
+      note: "Confidence versus actual results",
+    },
+    {
+      label: "Brier score",
+      value: formatScore(summary.brier_score, 3),
+      note: "Lower is better",
+    },
+    {
+      label: "Hard audit flags",
+      value: String(summary.hard_audit_failures ?? 0),
+      note: "Champion, H2H, and data-quality failures",
+    },
+  ];
+
+  return (
+    <motion.section
+      className="evaluation-page"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="methodology-hero evaluation-hero">
+        <p>Model evaluation</p>
+        <h1>Does it hold up?</h1>
+        <span>
+          {evaluation?.rankings_as_of
+            ? `Backtested ${evaluation.model_version} with rankings through ${evaluation.rankings_as_of}.`
+            : modelLoadState === "loading"
+              ? "Loading evaluation data."
+              : "Evaluation data is not available."}
+        </span>
+      </div>
+
+      {!evaluation ? (
+        <section className="evaluation-empty">
+          <h2>{modelLoadState === "loading" ? "Loading model evaluation" : "No evaluation export found"}</h2>
+          <p>Run `npm run model:export` to regenerate the static evaluation file.</p>
+        </section>
+      ) : (
+        <div className="evaluation-layout">
+          <section className="evaluation-scorecard" aria-label="Backtest scorecard">
+            {scorecard.map((metric) => (
+              <article key={metric.label}>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+                <p>{metric.note}</p>
+              </article>
+            ))}
+          </section>
+
+          <section className="evaluation-panel baseline-panel">
+            <div className="section-kicker">Baseline comparison</div>
+            <h2>Context beats raw rating</h2>
+            <p>
+              The report compares OctagonRank against raw Elo-only and coin-flip baselines. Media and Meta rankings need
+              dated historical snapshots before they can be tested fairly.
+            </p>
+            <div className="baseline-table">
+              {baselineRows.map((row) => (
+                <article key={row.key}>
+                  <div>
+                    <strong>{row.label}</strong>
+                    <span>{row.description}</span>
+                  </div>
+                  <b>{percent(row.accuracy)}</b>
+                  <em>{formatScore(row.validation_score, 2)}</em>
+                </article>
+              ))}
+            </div>
+            {mediaComparison && (
+              <div className="comparison-note">
+                <strong>Media comparison status</strong>
+                <span>{mediaComparison.detail}</span>
+              </div>
+            )}
+          </section>
+
+          <section className="evaluation-panel calibration-panel">
+            <div className="section-kicker">Calibration</div>
+            <h2>Confidence bands</h2>
+            <div className="calibration-list">
+              {confidenceBuckets.map((bucket) => (
+                <article key={bucket.bucket}>
+                  <div>
+                    <strong>{bucket.label}</strong>
+                    <span>{bucket.fights} fights</span>
+                  </div>
+                  <div className="calibration-meter" aria-hidden="true">
+                    <i style={{ width: `${Math.min(100, Math.max(0, Number(bucket.accuracy ?? 0) * 100))}%` }} />
+                  </div>
+                  <b>{percent(bucket.accuracy)}</b>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="evaluation-panel title-context-panel">
+            <div className="section-kicker">Title context</div>
+            <h2>Where the model struggles</h2>
+            <p>
+              Title-context fights are a stress test because former champions and recent challengers often carry old
+              value into new matchups. This is where future tuning should be most careful.
+            </p>
+            {titleContext && (
+              <div className="title-context-stat">
+                <strong>{percent(titleContext.accuracy)}</strong>
+                <span>{titleContext.fights} title-context fights</span>
+                <em>{percent(titleContext.calibration_error)} calibration error</em>
+              </div>
+            )}
+          </section>
+
+          <section className="evaluation-panel miss-panel">
+            <div className="section-kicker">Biggest misses</div>
+            <h2>Where it was wrong</h2>
+            <div className="miss-list">
+              {misses.slice(0, 8).map((miss) => (
+                <article key={`${miss.date}-${miss.actual_winner}-${miss.predicted_winner}`}>
+                  <span>{miss.date}</span>
+                  <strong>{miss.actual_winner}</strong>
+                  <p>
+                    Beat {miss.predicted_winner}; model had {miss.predicted_winner} at {percent(miss.favorite_probability)}.
+                  </p>
+                  <em>{miss.division}</em>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="evaluation-panel stability-panel">
+            <div className="section-kicker">Division stability</div>
+            <h2>Most volatile divisions</h2>
+            <div className="stability-columns">
+              <div>
+                <h3>By fight results</h3>
+                {unstableBacktest.slice(0, 5).map((division) => (
+                  <article key={division.division}>
+                    <strong>{division.division}</strong>
+                    <span>{percent(division.underdog_win_rate)} upset rate</span>
+                  </article>
+                ))}
+              </div>
+              <div>
+                <h3>By close score bands</h3>
+                {unstableBands.slice(0, 5).map((division) => (
+                  <article key={division.division}>
+                    <strong>{division.division}</strong>
+                    <span>
+                      {division.high_risk_bands} high-risk bands, {division.virtual_tie_pairs} ties
+                    </span>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+    </motion.section>
+  );
+}
+
 function SimulatorView({ modelRankings, modelLoadState }) {
   const divisions = modelRankings?.divisions ?? [];
   const [divisionName, setDivisionName] = useState("");
@@ -2068,17 +2290,23 @@ function predictionRating(fighter) {
 }
 
 function methodMixForFighter(fighter) {
-  const totals = fighter.totals ?? {};
-  const fights = Math.max(1, Number(fighter.wins ?? 0) + Number(fighter.losses ?? 0));
-  const wins = Math.max(1, Number(fighter.wins ?? 0));
-  const finishRate = clamp(Number(fighter.finishes ?? 0) / wins, 0.12, 0.72);
+  const divisionFights = Math.max(0, Number(fighter.wins ?? 0) + Number(fighter.losses ?? 0));
+  const careerFights = Number(fighter.career_fights ?? 0);
+  const useCareerStyle = careerFights > Math.max(divisionFights, 2);
+  const totals = useCareerStyle ? fighter.career_totals ?? fighter.totals ?? {} : fighter.totals ?? {};
+  const fights = Math.max(1, useCareerStyle ? careerFights : divisionFights);
+  const wins = Math.max(1, useCareerStyle ? Number(fighter.career_wins ?? 0) : Number(fighter.wins ?? 0));
+  const finishes = useCareerStyle ? Number(fighter.career_finishes ?? 0) : Number(fighter.finishes ?? 0);
+  const finishRate = clamp(finishes / wins, 0.12, 0.72);
   const knockdownsPerFight = Number(totals.knockdowns ?? 0) / fights;
   const sigStrikesPerFight = Number(totals.sig_strikes_landed ?? 0) / fights;
   const takedownsPerFight = Number(totals.takedowns_landed ?? 0) / fights;
   const submissionAttemptsPerFight = Number(totals.submission_attempts ?? 0) / fights;
   const controlPerFight = Number(totals.control_seconds ?? 0) / fights;
-  const dominanceSignal = Number(fighter.average_dominance ?? 50) / 100;
-  const roundControlSignal = Number(fighter.average_round_dominance ?? 50) / 100;
+  const dominanceValue = useCareerStyle ? fighter.career_average_dominance : fighter.average_dominance;
+  const roundControlValue = useCareerStyle ? fighter.career_average_round_dominance : fighter.average_round_dominance;
+  const dominanceSignal = Number(dominanceValue ?? 50) / 100;
+  const roundControlSignal = Number(roundControlValue ?? 50) / 100;
   const koSignal = 0.38 + knockdownsPerFight * 0.22 + sigStrikesPerFight / 170 + dominanceSignal * 0.2;
   const submissionSignal =
     0.28 + takedownsPerFight * 0.08 + submissionAttemptsPerFight * 0.16 + controlPerFight / 1800 + roundControlSignal * 0.2;

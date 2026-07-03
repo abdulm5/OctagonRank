@@ -115,17 +115,26 @@ async function main() {
   const outDir = path.resolve(process.cwd(), args.outDir);
   await fs.mkdir(outDir, { recursive: true });
 
-  const [rankings, explanations, summary, backtest, audit] = await Promise.all([
+  const [rankings, explanations, summary, backtest, audit, diagnostics, scoreBands] = await Promise.all([
     readJson(path.join(modelDir, "rankings.json")),
     readOptionalJson(path.join(modelDir, "explanations.json"), null),
     readOptionalJson(path.join(modelDir, "summary.json"), null),
     readOptionalJson(path.join(modelDir, "backtest.json"), null),
     readOptionalJson(path.join(modelDir, "audit.json"), null),
+    readOptionalJson(path.join(modelDir, "diagnostics.json"), null),
+    readOptionalJson(path.join(modelDir, "score-bands.json"), null),
   ]);
 
   const explanationByFighter = buildExplanationMap(explanations);
   const exportedRankings = buildRankingsExport(rankings, explanationByFighter);
   const exportedExplanations = buildExplanationsExport(explanations);
+  const exportedEvaluation = buildEvaluationExport({
+    rankings,
+    backtest,
+    audit,
+    diagnostics,
+    scoreBands,
+  });
   const exportedSummary = {
     generated_at: new Date().toISOString(),
     rankings_as_of: rankings.as_of,
@@ -142,12 +151,14 @@ async function main() {
     methodology: rankings.methodology,
     backtest_summary: backtest?.summary ?? buildBacktestSummary(backtest),
     audit_summary: audit?.summary ?? audit ?? null,
+    evaluation_summary: exportedEvaluation.summary,
   };
 
   await Promise.all([
     writeJson(path.join(outDir, "rankings.json"), exportedRankings),
     writeJson(path.join(outDir, "explanations.json"), exportedExplanations),
     writeJson(path.join(outDir, "summary.json"), exportedSummary),
+    writeJson(path.join(outDir, "evaluation.json"), exportedEvaluation),
   ]);
 
   console.log(`Exported model data to ${args.outDir}`);
@@ -222,6 +233,14 @@ function compactFighter(fighter, divisionName, explanationByFighter, { isChampio
     wins: num(fighter.wins),
     losses: num(fighter.losses),
     finishes: num(fighter.finishes),
+    career_fights: num(fighter.career_fights),
+    career_record: fighter.career_record ?? fighter.division_record,
+    career_wins: num(fighter.career_wins),
+    career_losses: num(fighter.career_losses),
+    career_finishes: num(fighter.career_finishes),
+    career_average_dominance: num(fighter.career_average_dominance),
+    career_average_round_dominance: num(fighter.career_average_round_dominance),
+    career_totals: fighter.career_totals ?? fighter.totals ?? {},
     months_inactive: num(fighter.months_inactive),
     recent_record_30m: fighter.recent_record_30m,
     recent_fights_30m: num(fighter.recent_fights_30m),
@@ -299,6 +318,80 @@ function buildExplanationsExport(explanations) {
     rankings_model_version: explanations?.rankings_model_version ?? "",
     summary: explanations?.summary ?? null,
     divisions,
+  };
+}
+
+function buildEvaluationExport({ rankings, backtest, audit, diagnostics, scoreBands }) {
+  const backtestSummary = backtest?.summary ?? null;
+  const scoreBandSummary = scoreBands?.summary ?? null;
+  const auditSummary = audit?.summary ?? null;
+  const diagnosticsSummary = diagnostics?.summary ?? null;
+  const unstableByBacktest = backtest?.answers?.most_unstable_divisions ?? [];
+  const unstableByScoreBand = (scoreBands?.divisions ?? [])
+    .map((division) => {
+      const adjacentPairs = division.adjacent_pairs ?? [];
+      const bands = division.score_bands ?? [];
+      return {
+        division: division.division,
+        ranked_count: division.ranked_count,
+        virtual_tie_pairs: adjacentPairs.filter((pair) => pair.band === "virtual_tie").length,
+        close_pairs: adjacentPairs.filter((pair) => pair.band === "close").length,
+        high_risk_bands: bands.filter((band) => band.risk === "high").length,
+        first_band: bands[0]?.rank_range ?? "",
+      };
+    })
+    .sort((a, b) => b.high_risk_bands - a.high_risk_bands || b.virtual_tie_pairs - a.virtual_tie_pairs)
+    .slice(0, 8);
+
+  return {
+    generated_at: new Date().toISOString(),
+    rankings_as_of: rankings.as_of,
+    model_version: rankings.model_version,
+    source: rankings.source,
+    summary: {
+      fights: backtestSummary?.fights ?? 0,
+      accuracy: backtestSummary?.accuracy ?? 0,
+      upset_rate: backtestSummary?.underdog_win_rate ?? 0,
+      brier_score: backtestSummary?.brier_score ?? 0,
+      log_loss: backtestSummary?.log_loss ?? 0,
+      calibration_error: backtestSummary?.calibration_error ?? 0,
+      validation_score: backtestSummary?.validation_score ?? 0,
+      virtual_tie_pairs: scoreBandSummary?.virtual_tie_pairs ?? 0,
+      close_pairs: scoreBandSummary?.close_pairs ?? 0,
+      high_risk_bands: scoreBandSummary?.high_risk_bands ?? 0,
+      hard_audit_failures:
+        num(auditSummary?.champion_failures) +
+        num(auditSummary?.title_context_failures) +
+        num(auditSummary?.recent_head_to_head_violations) +
+        num(auditSummary?.data_quality_flags),
+      fragile_fighters: diagnosticsSummary?.fragile_fighters ?? 0,
+      max_rank_move: diagnosticsSummary?.max_rank_move ?? 0,
+    },
+    answers: backtest?.answers ?? null,
+    baselines: backtest?.baselines ?? null,
+    external_rankings_comparison: backtest?.external_rankings_comparison ?? null,
+    calibration: {
+      favorite_confidence_buckets: backtest?.favorite_confidence_buckets ?? [],
+      rating_gap_buckets: backtest?.rating_gap_buckets ?? [],
+      yearly: Object.entries(backtest?.years ?? {}).map(([year, value]) => ({ year, ...value })),
+    },
+    divisions: {
+      backtest_rankings: backtest?.division_rankings ?? [],
+      unstable_by_backtest: unstableByBacktest,
+      unstable_by_score_band: unstableByScoreBand,
+    },
+    title_context_validation: backtest?.title_context_validation ?? null,
+    fight_context_buckets: backtest?.fight_context_buckets ?? [],
+    method_buckets: backtest?.method_buckets ?? [],
+    biggest_model_misses: (backtest?.biggest_model_misses ?? []).slice(0, 15),
+    largest_rating_upsets: (backtest?.largest_rating_upsets ?? []).slice(0, 15),
+    score_bands: {
+      summary: scoreBandSummary,
+      most_uncertain_bands: (scoreBands?.most_uncertain_bands ?? []).slice(0, 15),
+      most_uncertain_fighters: (scoreBands?.most_uncertain_fighters ?? []).slice(0, 20),
+    },
+    audit_summary: auditSummary,
+    diagnostics_summary: diagnosticsSummary,
   };
 }
 

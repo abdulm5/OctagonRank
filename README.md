@@ -14,6 +14,7 @@ OctagonRank is a React-based UFC rankings prototype focused on making fighter ra
 - Fan-facing fighter explanations generated from the OctagonRank model export
 - Detailed stat panel for Benoit Saint Denis, including striking accuracy, takedown accuracy, strike targets, strike positions, and win method breakdown
 - Methodology page with draft model explanations
+- Evaluation dashboard with backtest accuracy, upset rate, calibration, baseline comparison, biggest model misses, and division stability
 - Matchup predictor that lets users choose two fighters and see win odds plus likely victory paths
 
 ## Tech Stack
@@ -79,7 +80,8 @@ npm run model:export
 That one command validates the local UFCStats input files, rebuilds
 `data/model/rankings.json`, generates fighter explanations, runs the audit,
 diagnostics, score-band report, backtest, and ranking assertions, then exports
-the compact static JSON files used by the React app under `public/model/`.
+the compact static JSON files used by the React app under `public/model/`,
+including the evaluation dashboard data.
 
 Useful variants:
 
@@ -150,9 +152,10 @@ npm run model:publish
 ```
 
 This lower-level export assumes `data/model/` already exists. It writes
-`public/model/rankings.json`, `public/model/explanations.json`, and
-`public/model/summary.json`. The React app loads those files directly, so it can
-run on GitHub Pages without a database or backend server.
+`public/model/rankings.json`, `public/model/explanations.json`,
+`public/model/summary.json`, and `public/model/evaluation.json`. The React app
+loads those files directly, so it can run on GitHub Pages without a database or
+backend server.
 
 After adding new UFCStats fight files, rebuild the model and static site data in
 one pass:

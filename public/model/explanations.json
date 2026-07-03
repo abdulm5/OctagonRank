@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-03T01:37:05.024Z",
+  "generated_at": "2026-07-03T02:08:41.012Z",
   "rankings_as_of": "2026-06-30",
-  "rankings_model_version": "v0.8.6-less-recent-form",
+  "rankings_model_version": "v0.8.7-division-carryover",
   "summary": {
     "divisions": 11,
     "fighters": 176,
-    "review_flags": 222,
+    "review_flags": 221,
     "high_priority_review_flags": 7
   },
   "divisions": [
@@ -3396,12 +3396,12 @@
       "fighters": [
         {
           "rank": 1,
-          "model_rank": 14,
+          "model_rank": 1,
           "fighter_name": "Islam Makhachev",
-          "final_score": 1784.78,
-          "model_score": 1601.92,
-          "policy_total": 182.86,
-          "explanation": "With our OctagonRank model, Islam Makhachev sits as the Welterweight champion because their best win grades well and their elite resume still carries real weight. The main thing holding them back is fewer separation wins. The ranking rules also use champion status as the division baseline. This spot is close enough that one strong result could move them quickly.",
+          "final_score": 1885.21,
+          "model_score": 1790.21,
+          "policy_total": 95,
+          "explanation": "With our OctagonRank model, Islam Makhachev sits as the Welterweight champion because their best win grades well and their elite resume still carries real weight. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also use champion status as the division baseline.",
           "top_positive_drivers": [
             {
               "key": "quality_win_adjustment",
@@ -3416,7 +3416,7 @@
             {
               "key": "recent_form_adjustment",
               "label": "Recent form",
-              "value": 13.53
+              "value": 10.67
             },
             {
               "key": "dominance_adjustment",
@@ -3425,6 +3425,11 @@
             }
           ],
           "top_negative_drivers": [
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": -18
+            },
             {
               "key": "finish_adjustment",
               "label": "Finish rate",
@@ -3436,22 +3441,23 @@
               "key": "current_context_prior",
               "label": "Current snapshot prior",
               "value": 95
-            },
-            {
-              "key": "title_guard_adjustment",
-              "label": "Champion guard",
-              "value": 87.86
             }
           ],
-          "penalties": []
+          "penalties": [
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": 18
+            }
+          ]
         },
         {
           "rank": 2,
-          "model_rank": 2,
+          "model_rank": 3,
           "fighter_name": "Ian Machado Garry",
-          "final_score": 1781.78,
+          "final_score": 1784.24,
           "model_score": 1727.28,
-          "policy_total": 54.5,
+          "policy_total": 56.96,
           "explanation": "With our OctagonRank model, Ian Machado Garry sits as the #2 contender in Welterweight because their recent run has been strong and their best win grades well. The main thing holding them back is fewer separation wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -3487,16 +3493,21 @@
               "key": "current_context_prior",
               "label": "Current snapshot prior",
               "value": 54.5
+            },
+            {
+              "key": "head_to_head_adjustment",
+              "label": "Head-to-head resolver",
+              "value": 2.46
             }
           ],
           "penalties": []
         },
         {
           "rank": 3,
-          "model_rank": 1,
+          "model_rank": 2,
           "fighter_name": "Carlos Prates",
-          "final_score": 1780.26,
-          "model_score": 1729.26,
+          "final_score": 1782.99,
+          "model_score": 1731.99,
           "policy_total": 51,
           "explanation": "With our OctagonRank model, Carlos Prates sits as the #3 contender in Welterweight because their recent run has been strong and their best win grades well. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
@@ -3508,7 +3519,7 @@
             {
               "key": "quality_win_adjustment",
               "label": "Best-win quality",
-              "value": 21.37
+              "value": 23.29
             },
             {
               "key": "recent_activity_adjustment",
@@ -3533,7 +3544,7 @@
         },
         {
           "rank": 4,
-          "model_rank": 3,
+          "model_rank": 4,
           "fighter_name": "Michael Morales",
           "final_score": 1771.72,
           "model_score": 1724.22,
@@ -3573,7 +3584,7 @@
         },
         {
           "rank": 5,
-          "model_rank": 5,
+          "model_rank": 6,
           "fighter_name": "Sean Brady",
           "final_score": 1756.99,
           "model_score": 1716.49,
@@ -3613,11 +3624,11 @@
         },
         {
           "rank": 6,
-          "model_rank": 9,
+          "model_rank": 8,
           "fighter_name": "Jack Della Maddalena",
           "final_score": 1752.07,
-          "model_score": 1641.26,
-          "policy_total": 110.81,
+          "model_score": 1656.35,
+          "policy_total": 95.72,
           "explanation": "With our OctagonRank model, Jack Della Maddalena sits as the #6 contender in Welterweight because their best win grades well and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is their latest result. The ranking rules also keep recent title-fight results close to the front of the line. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -3633,7 +3644,7 @@
             {
               "key": "elite_resume_adjustment",
               "label": "Elite resume",
-              "value": 9.04
+              "value": 9.55
             },
             {
               "key": "schedule_strength_adjustment",
@@ -3650,7 +3661,7 @@
             {
               "key": "recent_form_adjustment",
               "label": "Recent form",
-              "value": -3.3
+              "value": -0.62
             }
           ],
           "policy_components": [
@@ -3662,14 +3673,14 @@
             {
               "key": "title_context_adjustment",
               "label": "Title-context policy",
-              "value": 66.81
+              "value": 51.72
             }
           ],
           "penalties": []
         },
         {
           "rank": 7,
-          "model_rank": 4,
+          "model_rank": 5,
           "fighter_name": "Kamaru Usman",
           "final_score": 1750.57,
           "model_score": 1724.07,
@@ -3736,7 +3747,7 @@
         },
         {
           "rank": 8,
-          "model_rank": 6,
+          "model_rank": 7,
           "fighter_name": "Gabriel Bonfim",
           "final_score": 1725.05,
           "model_score": 1688.05,
@@ -3776,7 +3787,7 @@
         },
         {
           "rank": 9,
-          "model_rank": 13,
+          "model_rank": 14,
           "fighter_name": "Joaquin Buckley",
           "final_score": 1689.09,
           "model_score": 1623.47,
@@ -3827,7 +3838,7 @@
         },
         {
           "rank": 10,
-          "model_rank": 7,
+          "model_rank": 9,
           "fighter_name": "Belal Muhammad",
           "final_score": 1687.59,
           "model_score": 1654.09,
@@ -3894,7 +3905,7 @@
         },
         {
           "rank": 11,
-          "model_rank": 8,
+          "model_rank": 10,
           "fighter_name": "Daniel Rodriguez",
           "final_score": 1648.94,
           "model_score": 1643.44,
@@ -3940,7 +3951,7 @@
         },
         {
           "rank": 12,
-          "model_rank": 11,
+          "model_rank": 12,
           "fighter_name": "Yaroslav Amosov",
           "final_score": 1645.49,
           "model_score": 1625.99,
@@ -3980,7 +3991,7 @@
         },
         {
           "rank": 13,
-          "model_rank": 12,
+          "model_rank": 13,
           "fighter_name": "Uros Medic",
           "final_score": 1634.99,
           "model_score": 1625.99,
@@ -4087,7 +4098,7 @@
         },
         {
           "rank": 15,
-          "model_rank": 10,
+          "model_rank": 11,
           "fighter_name": "Mike Malott",
           "final_score": 1627.77,
           "model_score": 1637.77,
@@ -5954,8 +5965,8 @@
           "rank": 2,
           "model_rank": 1,
           "fighter_name": "Ciryl Gane",
-          "final_score": 1805.91,
-          "model_score": 1751.41,
+          "final_score": 1822.92,
+          "model_score": 1768.42,
           "policy_total": 54.5,
           "explanation": "With our OctagonRank model, Ciryl Gane sits as the #2 contender in Heavyweight because their best win grades well and their recent run has been strong. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -5967,12 +5978,12 @@
             {
               "key": "recent_form_adjustment",
               "label": "Recent form",
-              "value": 20.07
+              "value": 21.86
             },
             {
               "key": "elite_resume_adjustment",
               "label": "Elite resume",
-              "value": 14.96
+              "value": 16.35
             },
             {
               "key": "recent_activity_adjustment",
@@ -5994,8 +6005,8 @@
           "rank": 3,
           "model_rank": 3,
           "fighter_name": "Alex Pereira",
-          "final_score": 1759.84,
-          "model_score": 1715.84,
+          "final_score": 1757.06,
+          "model_score": 1713.06,
           "policy_total": 44,
           "explanation": "With our OctagonRank model, Alex Pereira sits as the #3 contender in Heavyweight because their recent run has been strong and their best win grades well. The main thing holding them back is uncertainty from changing divisions. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -6024,7 +6035,7 @@
             {
               "key": "current_division_overlay_adjustment",
               "label": "Current-division overlay",
-              "value": -26.82
+              "value": -29.6
             },
             {
               "key": "division_transfer_penalty",

@@ -4,6 +4,18 @@
   "notes": "Used to make source-backed division moves explicit. The model applies these moves before ranking-policy adjustments so fighters are removed from old divisions and placed in their active division.",
   "division_moves": [
     {
+      "fighter": "Islam Makhachev",
+      "from_division": "Lightweight",
+      "to_division": "Welterweight",
+      "effective_date": "2025-11-15",
+      "current_rank": 0,
+      "status": "division_transfer_after_welterweight_title_fight",
+      "resume_carryover": "elite_champion",
+      "transfer_penalty": 5,
+      "source_url": "data/ufcstats/fights.json",
+      "note": "Makhachev is treated as a welterweight after the Jack Della Maddalena title fight. His elite lightweight resume carries into the pre-fight projection with a small division-transfer penalty instead of resetting him to a fresh 1500 rating."
+    },
+    {
       "fighter": "Alex Pereira",
       "from_division": "Light Heavyweight",
       "to_division": "Heavyweight",

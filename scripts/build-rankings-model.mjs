@@ -127,6 +127,7 @@ async function main() {
   const roundStatsByFight = groupRoundStats(roundStats);
   const fighterProfiles = new Map(fighters.map((fighter) => [fighter.fighter_id, fighter]));
   const titleContextByFighter = buildTitleContextByFighter(titleContext);
+  const divisionContextByFighter = buildDivisionContextByFighter(divisionContext);
   const annotationsByFight = new Map(annotations.map((annotation) => [annotation.fight_id, annotation]));
   const sourceEndDate = new Date(summary.end_date ?? latestDate(fights));
   const asOfDate = args.asOfDate ? parseDateArg(args.asOfDate, "--as-of") : sourceEndDate;
@@ -154,6 +155,7 @@ async function main() {
       divisionRatings,
       fighterProfiles,
       titleContextByFighter,
+      divisionContextByFighter,
       modelConfig: args.modelConfig,
       args,
     });
@@ -261,7 +263,7 @@ async function main() {
   );
 
   const output = {
-    model_version: "v0.8.6-less-recent-form",
+    model_version: "v0.8.7-division-carryover",
     generated_at: new Date().toISOString(),
     as_of: toIsoDate(asOfDate),
     source: summary.source ?? "ufcstats.com",
@@ -363,6 +365,7 @@ function processFight({
   divisionRatings,
   fighterProfiles,
   titleContextByFighter,
+  divisionContextByFighter,
   modelConfig,
   args,
 }) {
@@ -391,6 +394,26 @@ function processFight({
   const division = getDivisionState(divisionRatings, fight.weight_class);
   const winner = getFighterState(division, winnerId, winnerName, fight.weight_class, args.initialRating);
   const loser = getFighterState(division, loserId, loserName, fight.weight_class, args.initialRating);
+  const winnerDivisionCarryover = applyPreFightDivisionCarryover({
+    fighter: winner,
+    fighterId: winnerId,
+    fighterName: winnerName,
+    targetDivision: fight.weight_class,
+    fightDate: fight.event_date,
+    divisionRatings,
+    divisionContextByFighter,
+    args,
+  });
+  const loserDivisionCarryover = applyPreFightDivisionCarryover({
+    fighter: loser,
+    fighterId: loserId,
+    fighterName: loserName,
+    targetDivision: fight.weight_class,
+    fightDate: fight.event_date,
+    divisionRatings,
+    divisionContextByFighter,
+    args,
+  });
 
   const winnerPreRating = winner.rating;
   const loserPreRating = loser.rating;
@@ -498,10 +521,18 @@ function processFight({
     contextual_rating_gap: round(winnerPreFightContext.adjustedRating - loserPreFightContext.adjustedRating, 2),
     winner_context_adjusted_pre_rating: winnerPreFightContext.adjustedRating,
     loser_context_adjusted_pre_rating: loserPreFightContext.adjustedRating,
+    winner_division_carryover_adjustment: winnerDivisionCarryover.adjustment,
+    loser_division_carryover_adjustment: loserDivisionCarryover.adjustment,
+    winner_division_carryover_source: winnerDivisionCarryover.sourceDivision,
+    loser_division_carryover_source: loserDivisionCarryover.sourceDivision,
+    winner_division_carryover_penalty: winnerDivisionCarryover.transferPenalty,
+    loser_division_carryover_penalty: loserDivisionCarryover.transferPenalty,
+    winner_division_carryover_reason: winnerDivisionCarryover.reason,
+    loser_division_carryover_reason: loserDivisionCarryover.reason,
     winner_pre_fight_context_adjustment: winnerPreFightContext.adjustment,
     loser_pre_fight_context_adjustment: loserPreFightContext.adjustment,
-    winner_pre_fight_context_reason: winnerPreFightContext.reasons.join("|"),
-    loser_pre_fight_context_reason: loserPreFightContext.reasons.join("|"),
+    winner_pre_fight_context_reason: joinReasons(winnerDivisionCarryover.reason, ...winnerPreFightContext.reasons),
+    loser_pre_fight_context_reason: joinReasons(loserDivisionCarryover.reason, ...loserPreFightContext.reasons),
     winner_title_context: winnerPreFightContext.titleContextTag,
     loser_title_context: loserPreFightContext.titleContextTag,
     base_elo_change: round(baseEloChange, 2),
@@ -530,6 +561,72 @@ function processFight({
     winner_post_rating: round(winner.rating, 2),
     loser_post_rating: round(loser.rating, 2),
   };
+}
+
+function applyPreFightDivisionCarryover({
+  fighter,
+  fighterId,
+  fighterName,
+  targetDivision,
+  fightDate,
+  divisionRatings,
+  divisionContextByFighter,
+  args,
+}) {
+  if (!fighter || fighter.fights > 0) return emptyDivisionCarryover();
+
+  const fightDateValue = new Date(fightDate);
+  if (Number.isNaN(fightDateValue.getTime())) return emptyDivisionCarryover();
+
+  const divisionMove = getActiveDivisionMove(
+    divisionContextByFighter.get(normalizeName(fighterName)),
+    targetDivision,
+    fightDateValue,
+  );
+  if (!divisionMove?.from_division || divisionMove.from_division === targetDivision) {
+    return emptyDivisionCarryover();
+  }
+
+  const sourceDivision = divisionRatings.get(divisionMove.from_division);
+  const sourceFighter = sourceDivision?.get(fighterId) ?? findFighterStateByName(sourceDivision, fighterName);
+  if (!sourceFighter || sourceFighter.fights <= 0) return emptyDivisionCarryover();
+
+  const transferPenalty = getDivisionTransferPenalty({
+    sourceDivision: divisionMove.from_division,
+    displayDivision: targetDivision,
+    divisionMove,
+  });
+  const carriedRating = round(Math.max(args.initialRating, sourceFighter.rating - transferPenalty), 2);
+  if (carriedRating <= fighter.rating) return emptyDivisionCarryover();
+
+  const previousRating = fighter.rating;
+  fighter.rating = carriedRating;
+
+  return {
+    adjustment: round(carriedRating - previousRating, 2),
+    reason: `division_carryover:${divisionMove.from_division}->${targetDivision}`,
+    sourceDivision: divisionMove.from_division,
+    transferPenalty,
+  };
+}
+
+function emptyDivisionCarryover() {
+  return {
+    adjustment: 0,
+    reason: "",
+    sourceDivision: "",
+    transferPenalty: 0,
+  };
+}
+
+function findFighterStateByName(division, fighterName) {
+  if (!division) return null;
+  const normalizedName = normalizeName(fighterName);
+  return Array.from(division.values()).find((fighter) => normalizeName(fighter.name) === normalizedName) ?? null;
+}
+
+function joinReasons(...reasons) {
+  return reasons.filter(Boolean).join("|");
 }
 
 function addScoreConfidenceLabels(divisions) {
@@ -656,6 +753,7 @@ function formatScoreGap(value) {
 function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapshot, titleContext, divisionContext, fightImpacts }) {
   const fighterIndex = buildFighterIndex(divisionRatings, asOfDate, args.modelConfig);
   const careerEliteResumeByFighter = buildCareerEliteResumeByFighter(divisionRatings, asOfDate);
+  const careerStyleByFighter = buildCareerStyleByFighter(divisionRatings);
   const snapshotByDivision = new Map((currentSnapshot?.divisions ?? []).map((division) => [division.division, division]));
   const titleContextByDivision = new Map((titleContext?.divisions ?? []).map((division) => [division.division, division]));
   const divisionContextByFighter = buildDivisionContextByFighter(divisionContext);
@@ -672,6 +770,7 @@ function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapsho
         asOfDate,
         args,
         careerEliteResume: careerEliteResumeByFighter.get(normalizeName(fighter.name)),
+        careerStyle: careerStyleByFighter.get(normalizeName(fighter.name)),
       }),
     );
 
@@ -686,6 +785,7 @@ function buildDivisionRankings({ divisionRatings, asOfDate, args, currentSnapsho
           titleContextDivision: titleContextByDivision.get(divisionName),
           divisionContextByFighter,
           careerEliteResumeByFighter,
+          careerStyleByFighter,
           modelConfig: args.modelConfig,
           fightImpacts,
         })
@@ -714,6 +814,7 @@ function buildCurrentSnapshotRankings({
   titleContextDivision,
   divisionContextByFighter,
   careerEliteResumeByFighter,
+  careerStyleByFighter,
   modelConfig,
   fightImpacts,
 }) {
@@ -749,6 +850,7 @@ function buildCurrentSnapshotRankings({
             divisionMove,
           }),
           careerEliteResume: careerEliteResumeByFighter.get(normalizedName),
+          careerStyle: careerStyleByFighter.get(normalizedName),
         })
       : null;
     const baseCandidate = chooseSnapshotCandidate({ currentDivisionCandidate, transferCandidate, divisionMove }) ??
@@ -1484,7 +1586,16 @@ function calculateCurrentDivisionOverlayAdjustment(candidate) {
   return round(recordAdjustment + trendAdjustment + roundAdjustment, 2);
 }
 
-function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, args, transferPenalty = 0, careerEliteResume = null }) {
+function makeCandidate({
+  fighter,
+  displayDivision,
+  sourceDivision,
+  asOfDate,
+  args,
+  transferPenalty = 0,
+  careerEliteResume = null,
+  careerStyle = null,
+}) {
   const weights = getModelWeights(args.modelConfig);
   const monthsInactive = monthsBetween(new Date(fighter.lastFightDate), asOfDate);
   const inactivityPenalty = round(calculateInactivityPenalty(monthsInactive) * weights.inactivity_penalty, 2);
@@ -1589,6 +1700,14 @@ function makeCandidate({ fighter, displayDivision, sourceDivision, asOfDate, arg
     wins: fighter.wins,
     losses: fighter.losses,
     finishes: fighter.finishes,
+    career_fights: careerStyle?.fights ?? fighter.fights,
+    career_record: careerStyle ? `${careerStyle.wins}-${careerStyle.losses}` : `${fighter.wins}-${fighter.losses}`,
+    career_wins: careerStyle?.wins ?? fighter.wins,
+    career_losses: careerStyle?.losses ?? fighter.losses,
+    career_finishes: careerStyle?.finishes ?? fighter.finishes,
+    career_average_dominance: careerStyle?.averageDominance ?? round(averageDominance, 1),
+    career_average_round_dominance: careerStyle?.averageRoundDominance ?? round(averageRoundDominance, 1),
+    career_totals: careerStyle?.totals ?? fighter.totals,
     last_fight_date: fighter.lastFightDate,
     months_inactive: round(monthsInactive, 1),
     average_dominance: round(averageDominance, 1),
@@ -1672,6 +1791,14 @@ function makeSyntheticCandidate({ name, divisionName, args }) {
     wins: 0,
     losses: 0,
     finishes: 0,
+    career_fights: 0,
+    career_record: "0-0",
+    career_wins: 0,
+    career_losses: 0,
+    career_finishes: 0,
+    career_average_dominance: 50,
+    career_average_round_dominance: 50,
+    career_totals: createEmptyTotals(),
     last_fight_date: "",
     months_inactive: 0,
     average_dominance: 50,
@@ -1682,16 +1809,7 @@ function makeSyntheticCandidate({ name, divisionName, args }) {
     comeback_finishes: 0,
     best_win: null,
     last_five: [],
-    totals: {
-      knockdowns: 0,
-      sig_strikes_landed: 0,
-      sig_strikes_attempted: 0,
-      sig_strikes_absorbed: 0,
-      takedowns_landed: 0,
-      takedowns_attempted: 0,
-      submission_attempts: 0,
-      control_seconds: 0,
-    },
+    totals: createEmptyTotals(),
   };
 }
 
@@ -2296,6 +2414,69 @@ function buildCareerEliteResumeByFighter(divisionRatings, asOfDate) {
     index.set(normalizedName, calculateCareerEliteResume(fighterStates, asOfDate));
   }
   return index;
+}
+
+function buildCareerStyleByFighter(divisionRatings) {
+  const statesByFighter = new Map();
+  for (const fighters of divisionRatings.values()) {
+    for (const fighter of fighters.values()) {
+      const normalizedName = normalizeName(fighter.name);
+      if (!statesByFighter.has(normalizedName)) statesByFighter.set(normalizedName, []);
+      statesByFighter.get(normalizedName).push(fighter);
+    }
+  }
+
+  const index = new Map();
+  for (const [normalizedName, fighterStates] of statesByFighter.entries()) {
+    const totals = createEmptyTotals();
+    let fights = 0;
+    let wins = 0;
+    let losses = 0;
+    let finishes = 0;
+    let dominanceTotal = 0;
+    let dominanceSamples = 0;
+    let roundDominanceTotal = 0;
+    let roundDominanceSamples = 0;
+
+    for (const fighter of fighterStates) {
+      fights += num(fighter.fights);
+      wins += num(fighter.wins);
+      losses += num(fighter.losses);
+      finishes += num(fighter.finishes);
+      dominanceTotal += num(fighter.dominanceTotal);
+      dominanceSamples += num(fighter.dominanceSamples);
+      roundDominanceTotal += num(fighter.roundDominanceTotal);
+      roundDominanceSamples += num(fighter.roundDominanceSamples);
+      for (const key of Object.keys(totals)) {
+        totals[key] += num(fighter.totals?.[key]);
+      }
+    }
+
+    index.set(normalizedName, {
+      fights,
+      wins,
+      losses,
+      finishes,
+      averageDominance: round(dominanceSamples > 0 ? dominanceTotal / dominanceSamples : 50, 1),
+      averageRoundDominance: round(roundDominanceSamples > 0 ? roundDominanceTotal / roundDominanceSamples : 50, 1),
+      totals,
+    });
+  }
+
+  return index;
+}
+
+function createEmptyTotals() {
+  return {
+    knockdowns: 0,
+    sig_strikes_landed: 0,
+    sig_strikes_attempted: 0,
+    sig_strikes_absorbed: 0,
+    takedowns_landed: 0,
+    takedowns_attempted: 0,
+    submission_attempts: 0,
+    control_seconds: 0,
+  };
 }
 
 function calculateCareerEliteResume(fighterStates, asOfDate) {

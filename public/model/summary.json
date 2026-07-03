@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-03T01:37:05.024Z",
+  "generated_at": "2026-07-03T02:08:41.013Z",
   "rankings_as_of": "2026-06-30",
-  "model_version": "v0.8.6-less-recent-form",
+  "model_version": "v0.8.7-division-carryover",
   "source": "ufcstats.com",
   "model_summary": {
-    "generated_at": "2026-07-03T01:37:04.363Z",
+    "generated_at": "2026-07-03T02:08:40.303Z",
     "as_of": "2026-06-30",
     "processed_fights": 8272,
     "skipped_fights": 149,
@@ -25,7 +25,7 @@
     "annotations": 43,
     "current_snapshot_divisions": 11,
     "title_context_divisions": 6,
-    "division_context_moves": 2,
+    "division_context_moves": 3,
     "source_data_end_date": "2026-06-30"
   },
   "model_settings": {
@@ -68,18 +68,19 @@
   },
   "backtest_summary": {
     "fights": 1268,
-    "correct": 763,
-    "accuracy": 0.6017,
-    "expected_correct": 701.77,
-    "average_favorite_probability": 0.5534,
-    "calibration_error": 0.0483,
-    "brier_score": 0.2413,
-    "log_loss": 0.6756,
-    "validation_score": 509.56,
-    "average_winner_rating_gap": 9.59,
-    "favorite_wins": 762,
-    "underdog_wins": 506,
-    "underdog_win_rate": 0.3991
+    "correct": 764,
+    "accuracy": 0.6025,
+    "expected_correct": 701.51,
+    "average_favorite_probability": 0.5532,
+    "average_winner_probability": 0.5137,
+    "calibration_error": 0.0493,
+    "brier_score": 0.2411,
+    "log_loss": 0.6752,
+    "validation_score": 510.31,
+    "average_winner_rating_gap": 9.67,
+    "favorite_wins": 764,
+    "underdog_wins": 504,
+    "underdog_win_rate": 0.3975
   },
   "audit_summary": {
     "champion_failures": 0,
@@ -90,8 +91,23 @@
     "inactive_top_ranked": 0,
     "prospect_overboost": 0,
     "old_opponent_overcredit": 0,
-    "large_policy_adjustments": 9,
-    "large_baseline_policy_adjustments": 30,
+    "large_policy_adjustments": 8,
+    "large_baseline_policy_adjustments": 31,
     "data_quality_flags": 0
+  },
+  "evaluation_summary": {
+    "fights": 1268,
+    "accuracy": 0.6025,
+    "upset_rate": 0.3975,
+    "brier_score": 0.2411,
+    "log_loss": 0.6752,
+    "calibration_error": 0.0493,
+    "validation_score": 510.31,
+    "virtual_tie_pairs": 49,
+    "close_pairs": 23,
+    "high_risk_bands": 32,
+    "hard_audit_failures": 0,
+    "fragile_fighters": 0,
+    "max_rank_move": 2
   }
 }
