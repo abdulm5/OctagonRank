@@ -1,29 +1,317 @@
 # OctagonRank
 
-OctagonRank is a React-based UFC rankings prototype focused on making fighter rankings more transparent. The app presents a UFC-style rankings board, compares multiple ranking sources, and lets users open a fighter profile without leaving the page.
+OctagonRank is an explainable UFC ranking engine and static React dashboard. It was built as a CS/data project around one question:
 
-## Current Features
+> Can a fighter ranking system be more transparent than a black-box ranking table while still accounting for opponent quality, recent form, dominance, activity, title context, and division movement?
 
-- Men's division rankings laid out in a UFC-inspired board format
-- Toggle between three ranking sources:
-  - Our model
-  - UFC Meta rankings
-  - Media rankings
-- Animated in-page fighter profile view
-- Fighter profile summary with record, wins, significant strikes, TKO/KO wins, submissions, and activity status
-- Fan-facing fighter explanations generated from the OctagonRank model export
-- Detailed stat panel for Benoit Saint Denis, including striking accuracy, takedown accuracy, strike targets, strike positions, and win method breakdown
-- Methodology page with draft model explanations
-- Evaluation dashboard with backtest accuracy, upset rate, calibration, baseline comparison, biggest model misses, and division stability
-- Matchup predictor that lets users choose two fighters and see win odds plus likely victory paths
+The project has two parts:
 
-## Tech Stack
+- A reproducible Node.js model pipeline that ingests UFCStats data, applies a context-aware Elo-style ranking model, audits the output, backtests pre-fight predictions, and exports static JSON.
+- A Vite/React frontend that renders UFC-style rankings, fighter explanations, source comparisons, a matchup predictor, methodology notes, and model evaluation results.
 
-- React
-- Vite
-- Framer Motion
-- Lucide React
-- CSS
+The frontend is intentionally static. The app reads `public/model/*.json`, so it can be hosted on GitHub Pages without a database or backend server.
+
+## Current Snapshot
+
+- Model version: `v0.8.7-division-carryover`
+- Rankings as of: `2026-06-30`
+- Source: `ufcstats.com` scrape plus source-controlled manual context files
+- Processed fights: `8,272`
+- Skipped no-result/unsupported fights: `149`
+- Ranked fighters exported to the app: `176`
+- Divisions exported: `11`
+- Backtest sample: `1,268` fights since `2024-01-01`
+- Context model accuracy: `60.25%`
+- Raw Elo-only baseline accuracy: `58.44%`
+- Hard audit failures: `0`
+- Ranking assertion failures: `0`
+
+## What The Model Scores
+
+OctagonRank starts with a division-specific Elo rating and then exposes every major adjustment used to create the final ranking score.
+
+### Fight-Level Rating Update
+
+Every fight is processed chronologically inside its weight class.
+
+```text
+raw_expected = 1 / (1 + 10 ^ ((opponent_rating - fighter_rating) / 400))
+base_delta   = K * (actual_result - context_adjusted_expected)
+rating_delta = base_delta
+             * method_multiplier
+             * fight_dominance_multiplier
+             * round_dominance_multiplier
+             * result_confidence_multiplier
+             * opponent_quality_multiplier
+```
+
+Current default `K` is `32`.
+
+The model gives larger rating movement for:
+
+- Beating a higher-rated opponent
+- Finishing a fight cleanly
+- Winning with strong significant-strike, knockdown, takedown, submission, or control-time separation
+- Winning clear round profiles instead of narrow/low-repeatability outcomes
+- Beating opponents with title-lineage or elite-resume context
+
+The model dampens rating movement for:
+
+- Split or majority decisions
+- Disqualifications, doctor stoppages, injury finishes, and other noisy outcomes
+- Older declining opponents
+- Inactive opponents
+- Opponents on negative recent form
+- Comeback finishes where the winner was losing the round profile before the finish
+
+### Pre-Fight Context
+
+The backtest does not use only raw Elo. Before calculating expected win probability, the model applies transparent pre-fight context:
+
+- Fighter age
+- Recent wins/losses
+- Recent rating trend
+- Recent activity
+- Losing streaks
+- Title-lineage tags
+- Career elite-resume score
+- Division-transfer carryover
+
+This is why fight-impact rows include both:
+
+- `raw_expected_winner`
+- `expected_winner`
+
+The second value is the context-aware probability used by the backtest and evaluation dashboard.
+
+### Post-Fight Ranking Score
+
+After chronological fight processing, each ranked fighter gets a final ranking score:
+
+```text
+model_score = base_rating
+            + recent_form_adjustment
+            + recent_outcome_adjustment
+            + schedule_strength_adjustment
+            + recent_activity_adjustment
+            + dominance_adjustment
+            + round_dominance_adjustment
+            + finish_adjustment
+            + title_win_adjustment
+            + elite_resume_adjustment
+            + quality_win_adjustment
+            - inactivity_penalty
+            - legacy_penalty
+```
+
+The ranking policy layer then adds visible, auditable adjustments:
+
+- Champion guard
+- Current snapshot prior
+- Confidence-based rank guard
+- Recent head-to-head resolver
+- Title-context protection
+- Top-contender credibility gate
+- Snapshot-order tiebreaker for close scores
+- Division-movement policy
+
+The frontend shows these as explainable ranking reasons instead of hiding them inside one opaque number.
+
+## Important Model Features
+
+### Opponent Quality
+
+Opponent strength is built into Elo, but OctagonRank also adjusts opponent quality at fight time. A win over a prime, active, title-context opponent is worth more than a win over an older, inactive, declining opponent with the same nominal rating.
+
+This helps avoid over-crediting famous names when the actual win happened late in the opponent's career.
+
+### Schedule Strength
+
+The model checks whether recent form is backed by strong opponent quality. A streak over weaker opposition can still help, especially if the wins are dominant, but it is capped so a fighter is not boosted like they beat multiple elite contenders.
+
+If a fighter builds a streak over weaker opponents and then loses badly in the first elite test, the model can mark that profile as an `elite_exposure_loss`.
+
+### Elite Resume
+
+OctagonRank calculates a career-level elite-resume score from:
+
+- Peak rating
+- Elite wins
+- Proven wins
+- Championship-level wins
+- Title-lineage wins
+- Time spent around elite opposition
+- Non-elite losses
+- Recent decline
+
+This lets the model value long-term elite fighters without hand-adding one-off exceptions.
+
+### Round-Level Dominance
+
+The model uses UFCStats round rows when available. It calculates per-round dominance from:
+
+- Significant strike differential
+- Knockdowns
+- Takedowns
+- Submission attempts
+- Control time
+
+This gives the model a way to distinguish a dominant win, a close decision, and a comeback finish after losing the round profile.
+
+### Division Transfer Carryover
+
+Division movement is handled through `data/ranking_inputs/division_context.json`.
+
+When a fighter moves divisions, the first fight in the new division no longer starts from a blank `1500` rating. The model carries over the source-division rating with a transparent transfer penalty.
+
+Current source-controlled division moves include:
+
+- Islam Makhachev: `Lightweight -> Welterweight`
+- Alex Pereira: `Light Heavyweight -> Heavyweight`
+- Paulo Costa: `Middleweight -> Light Heavyweight`
+
+This fixed a real modeling issue where Islam was previously treated like a fresh welterweight before the Jack Della Maddalena fight. After the fix, the historical fight row records:
+
+- `winner_division_carryover_reason = division_carryover:Lightweight->Welterweight`
+- Islam expected win probability vs JDM: about `60.6%`
+- Current simulator probability for Islam vs JDM: about `68.3%`
+
+### Manual Context, But Controlled
+
+The model does use manual files, but they are intentionally small and source-controlled:
+
+- `data/manual_annotations/ufc_fight_manual_annotations.csv`
+- `data/ranking_inputs/current_division_snapshot.json`
+- `data/ranking_inputs/title_context.json`
+- `data/ranking_inputs/division_context.json`
+- `data/ranking_inputs/model_assertions.json`
+
+These files handle information UFCStats does not represent cleanly:
+
+- Controversial decisions
+- Injury finishes
+- Short-notice fights
+- Weight misses
+- Major layoffs
+- Recent champions
+- Recent title losers
+- Interim champions
+- Division moves
+- Regression-test ranking relationships
+
+Manual context is not meant to override the model everywhere. It is meant to encode high-confidence context that would otherwise be invisible to public fight-stat data.
+
+## Evaluation
+
+The project includes a first predictive backtest and model-evaluation dashboard.
+
+Current evaluation sample:
+
+- Start date: `2024-01-01`
+- Fights tested: `1,268`
+- OctagonRank context model accuracy: `60.25%`
+- Raw Elo-only baseline accuracy: `58.44%`
+- Coin-flip baseline accuracy: `50.00%`
+- Brier score: `0.2411`
+- Log loss: `0.6752`
+- Calibration error: `0.0493`
+- Underdog win rate: `39.75%`
+
+The evaluation output also includes:
+
+- Favorite-confidence buckets
+- Division-level slices
+- Method buckets
+- Biggest model misses
+- Largest rating upsets
+- Title-context validation
+- Score-band risk summary
+- Audit summary
+- Diagnostics summary
+
+The goal is not to claim the model is a sportsbook. The goal is to make ranking logic measurable and debuggable.
+
+## Frontend
+
+The React app includes:
+
+- UFC-style rankings board
+- Toggle between OctagonRank, UFC Meta rankings, and media rankings
+- Animated fighter profile view
+- Fan-readable ranking explanations
+- Methodology page
+- Evaluation dashboard
+- Matchup predictor with win probability and likely victory paths
+- Static JSON loading from `public/model/`
+
+The matchup predictor uses the latest exported ranking score for win probability. For victory-path probabilities, it uses career-level style totals when a fighter has moved divisions, so a fighter is not treated as stylistically brand new after one fight in a new weight class.
+
+## Data Flow
+
+```text
+data/ufcstats/*.json
+        +
+data/manual_annotations/*.csv
+        +
+data/ranking_inputs/*.json
+        |
+        v
+scripts/build-rankings-model.mjs
+        |
+        v
+data/model/rankings.json
+data/model/fight_impacts.json
+data/model/fighter_scores.csv
+        |
+        v
+audit / diagnostics / score bands / backtest / assertions
+        |
+        v
+scripts/export-model-public.mjs
+        |
+        v
+public/model/rankings.json
+public/model/explanations.json
+public/model/summary.json
+public/model/evaluation.json
+        |
+        v
+React static frontend
+```
+
+## Repository Layout
+
+```text
+src/
+  App.jsx                  React app, rankings views, profiles, simulator, evaluation UI
+  styles.css               Dark-mode dashboard styling
+
+scripts/
+  scrape-ufcstats.mjs      UFCStats scraper
+  build-rankings-model.mjs Core ranking model
+  backtest-model.mjs       Predictive validation
+  audit-rankings.mjs       Ranking failure-mode audit
+  diagnose-model.mjs       Sensitivity and bias diagnostics
+  score-bands.mjs          Close-score confidence bands
+  explain-rankings.mjs     Fighter-level explanations
+  export-model-public.mjs  Static frontend JSON export
+  run-model-pipeline.mjs   Full model-to-frontend pipeline
+
+data/
+  manual_annotations/      Small source-backed context CSV
+  ranking_inputs/          Snapshot, title, division, and assertion inputs
+  ufcstats/                Local scraped data, ignored by git
+
+public/model/
+  rankings.json            Static rankings consumed by React
+  explanations.json        Static explanation payload
+  summary.json             Model metadata and methodology
+  evaluation.json          Backtest/evaluation dashboard payload
+
+docs/
+  model-v0.7.md
+  model-v0.8.md
+```
 
 ## Running Locally
 
@@ -33,55 +321,35 @@ Install dependencies:
 npm install
 ```
 
-Start the development server:
+Run the static frontend:
 
 ```bash
 npm run dev
 ```
 
-Build for production:
+Build the frontend:
 
 ```bash
 npm run build
 ```
 
-Scrape UFCStats completed fights from January 1, 2000 through June 30, 2026:
-
-```bash
-npm run scrape:ufcstats
-```
-
-The scraper writes JSON and CSV files to `data/ufcstats/`, including events,
-fights, per-fighter fight totals, per-round stats, and fighter profile stats.
-That output directory is ignored by git because a full scrape can be large.
-
-Manual fight-context annotations live in `data/manual_annotations/`. These are
-source-backed rows for things UFCStats does not represent cleanly, such as
-controversial decisions, injury finishes, short-notice fights, weight misses,
-division moves, and major layoffs.
-
-Title-lineage policy context lives in `data/ranking_inputs/title_context.json`.
-This small manual input handles cases like recent title losers, former
-champions, and interim champions without hiding the adjustment in the score.
-Entries can also cap their rank-policy adjustment, which keeps narrow
-title-lineage protections from turning into broad manual boosts.
-
-Current-division movement context lives in
-`data/ranking_inputs/division_context.json`. This source-backed file removes
-fighters from old divisions and places them in their active division before the
-ranking-policy layer runs.
-
-Run the full model-to-frontend pipeline:
+Regenerate the complete model and frontend JSON export:
 
 ```bash
 npm run model:export
 ```
 
-That one command validates the local UFCStats input files, rebuilds
-`data/model/rankings.json`, generates fighter explanations, runs the audit,
-diagnostics, score-band report, backtest, and ranking assertions, then exports
-the compact static JSON files used by the React app under `public/model/`,
-including the evaluation dashboard data.
+This runs the full pipeline:
+
+1. Build rankings
+2. Generate fighter explanations
+3. Audit rankings
+4. Run diagnostics
+5. Build score bands
+6. Write audit review
+7. Backtest pre-fight ratings
+8. Check ranking assertions
+9. Export compact frontend JSON
 
 Useful variants:
 
@@ -91,201 +359,88 @@ npm run model:export -- --as-of=2025-12-31
 npm run model:export -- --skip-backtest
 ```
 
-Use the lower-level commands below when debugging one stage of the pipeline.
-
-Build the ranking-policy model:
+Scrape UFCStats data:
 
 ```bash
-npm run model:rankings
+npm run scrape:ufcstats
 ```
 
-The model writes generated rankings, score breakdowns, and fight-impact files to
-`data/model/`. Those files are ignored by git because they are reproducible from
-the scraped UFCStats data plus manual annotations.
+The scraper writes local data to `data/ufcstats/`. That directory is ignored by git because a full scrape is large and reproducible.
 
-Audit the generated rankings for common failure modes:
+## Model Commands
 
 ```bash
-npm run model:audit
+npm run model:rankings     # Build rankings and fight-impact files
+npm run model:explain      # Generate fighter explanation JSON/Markdown
+npm run model:audit        # Check ranking failure modes
+npm run model:review       # Write readable audit review
+npm run model:backtest     # Validate pre-fight probabilities
+npm run model:diagnostics  # Run sensitivity and group diagnostics
+npm run model:bands        # Generate close-score bands
+npm run model:assertions   # Run regression ranking assertions
+npm run model:tune         # Test predefined model-weight candidates
+npm run model:compare      # Compare two model runs
+npm run model:history      # Generate historical ranking movement snapshots
+npm run model:publish      # Export public/model/*.json from existing data/model
 ```
 
-The audit checks champion placement, title-context rules, recent head-to-head
-violations, inactive top-ranked fighters, old-opponent over-credit, thin
-top-15 entries, large rescue policy adjustments, baseline context priors, and
-data-quality issues such as duplicate snapshot entries or unexplained division
-transfers.
+## Static Hosting
 
-Generate a readable review report after the audit, diagnostics, and score-band
-checks:
+The deployed app does not need a database. The GitHub Pages deployment is configured for:
 
-```bash
-npm run model:review
+```text
+https://abdulm5.github.io/OctagonRank/
 ```
 
-The review writes `data/model/audit-review.md`. It summarizes the audit,
-prints each division's top 15 with score explanations, and lists the exact
-fighters, diagnostic bias groups, fragile rankings, sensitive score components,
-and close-score clusters that need the next tuning pass.
+The Vite base path is set in `vite.config.js`:
 
-Generate fighter-level ranking explanations:
-
-```bash
-npm run model:explain
+```js
+base: "/OctagonRank/"
 ```
 
-The explanation report writes `data/model/explanations.json` and
-`data/model/explanations.md`, plus per-fighter Markdown pages under
-`data/model/fighter_explanations/`. It breaks each fighter into model score,
-policy movement, confidence band, top positive drivers, top penalties, best
-win, recent form, and automatic review flags for rankings that need manual
-inspection.
+That lets static assets and model JSON load correctly from the repository subpath.
 
-The current model also uses those review patterns for a top-contender
-credibility gate, which visibly penalizes top-five or near-top-five placements
-when recent form is not backed by elite resume, title-lineage wins, current
-snapshot support, or strong recent opponent quality.
+The model pipeline generates:
 
-Export only the compact model artifacts for the static frontend:
+- `public/model/rankings.json`
+- `public/model/explanations.json`
+- `public/model/summary.json`
+- `public/model/evaluation.json`
 
-```bash
-npm run model:publish
-```
-
-This lower-level export assumes `data/model/` already exists. It writes
-`public/model/rankings.json`, `public/model/explanations.json`,
-`public/model/summary.json`, and `public/model/evaluation.json`. The React app
-loads those files directly, so it can run on GitHub Pages without a database or
-backend server.
-
-After adding new UFCStats fight files, rebuild the model and static site data in
-one pass:
+The React app fetches those files at runtime. Updating rankings means:
 
 ```bash
 npm run model:export
+npm run build
 ```
 
-`npm run model:refresh` is kept as an alias for the same pipeline.
+Then commit the updated `public/model/*.json` files and push to `main`. The GitHub Actions workflow in `.github/workflows/deploy.yml` runs `npm ci`, builds the Vite app, uploads `dist/`, and deploys it through GitHub Pages.
 
-Close-score cases also use a visible snapshot-order tiebreaker so an active
-higher-snapshot contender with recent form or elite decision-loss context is
-not pushed below lower-snapshot fighters unless the model score gap is large
-enough to justify it.
+In the GitHub repository settings, Pages should be set to deploy from `GitHub Actions`.
 
-Run the first predictive backtest:
+## Current Limitations
 
-```bash
-npm run model:backtest
-```
+- The model is only as current as the local UFCStats scrape and manual snapshot files.
+- Current UFC, Meta, and media comparison rankings are manually maintained inputs, not live API pulls.
+- Sportsbook odds are not integrated yet. The next evaluation upgrade is a `market_odds.csv` baseline that compares OctagonRank probabilities against closing lines.
+- Manual title and division context are intentionally small, but still require review when fighters change divisions or title status.
+- The matchup predictor is a ranking-based probability tool, not a full fight simulation engine.
+- Fighter photos are not fully automated.
+- The project does not currently generate pound-for-pound rankings.
 
-The backtest writes `data/model/backtest.json` and `data/model/backtest.md`.
-It checks how often the higher-rated pre-fight fighter won for fights since
-January 1, 2024, then reports accuracy, Brier score, log loss, calibration
-error, favorite-confidence buckets, division slices, year slices, method
-validation, and ranked/title-context proxy performance.
+## Why This Is A CS Project
 
-Pre-fight win probability is context-aware: the model records both the raw Elo
-expectation and the context-adjusted expectation after age, recent form,
-activity, title-lineage, and elite-resume context are applied. Fight-impact rows
-include the contextual rating gap and the adjustment reasons so the prediction
-can be explained later in the frontend.
+OctagonRank combines:
 
-Generate historical ranking movement:
+- Web scraping and data normalization
+- Chronological model state updates
+- Elo-style rating algorithms
+- Feature engineering from fight statistics
+- Manual context design with controlled inputs
+- Backtesting and calibration metrics
+- Sensitivity diagnostics
+- Static artifact generation
+- React data visualization
+- Explainable UI design
 
-```bash
-npm run model:history
-```
-
-The history report rebuilds historical snapshots with `--as-of` dates and
-current snapshot policy disabled by default, so future current rankings are not
-leaked into past snapshots. It writes `data/model/ranking_history.json` and
-`data/model/ranking_history.md` with top-five snapshots, rank movement, biggest
-risers, and biggest fallers.
-
-Run model diagnostics:
-
-```bash
-npm run model:diagnostics
-```
-
-Diagnostics write `data/model/diagnostics.json` and
-`data/model/diagnostics.md`. They check for fragile rankings, sensitivity to
-score components, and group-level pressure on categories like low-sample
-fighters, inactive fighters, dominant-win fighters, and schedule-penalized
-fighters.
-
-Generate close-score bands:
-
-```bash
-npm run model:bands
-```
-
-The band report writes `data/model/score-bands.json` and
-`data/model/score-bands.md`. It marks adjacent rankings as virtual ties, close
-pairs, or clear separations, then groups tightly packed fighters so tuning does
-not overreact to rankings that are effectively tied.
-
-Tune model weights against validation metrics:
-
-```bash
-npm run model:tune
-```
-
-The tuner rebuilds rankings for predefined candidate configurations, then runs
-audit, backtest, diagnostics, and ranking assertions for each one. It writes
-`data/model/tuning_report.json` and `data/model/tuning_report.md`; generated
-tuning runs stay under `data/model/tuning_runs/` and are ignored by git.
-
-Compare a baseline model against a tuning candidate:
-
-```bash
-npm run model:compare
-```
-
-The comparison report defaults to `baseline` versus `less_schedule_strength`. It
-rebuilds both runs, then writes `data/model/model_comparison.json` and
-`data/model/model_comparison.md` with validation deltas, assertion regressions,
-risk flags, biggest rank movers, new ranked fighters, removed ranked fighters,
-and division-level movement summaries. Use this before promoting a tuned
-candidate to the default formula.
-
-To compare the current context-aware engine against the older raw pre-fight Elo
-expectation, run:
-
-```bash
-npm run model:compare -- --baseline=no_pre_fight_context --candidate=baseline --no-keep-runs
-```
-
-Simulate a hypothetical fight result:
-
-```bash
-npm run model:simulate -- --division=Lightweight --winner="Arman Tsarukyan" --loser="Justin Gaethje" --method=Submission --round=3 --performance=clear --title-fight
-```
-
-The simulator reads `data/model/rankings.json`, applies a transparent
-single-fight projection, then writes `data/model/simulation.json` and
-`data/model/simulation.md`. It reports raw and context-adjusted win
-probability, method/performance multipliers, model-score movement, projected
-rank changes, close-score confidence, and champion-transfer policy when a
-champion loses. This is a snapshot projection, not a historical rebuild.
-
-Check ranking regression assertions:
-
-```bash
-npm run model:assertions
-```
-
-Assertions live in `data/ranking_inputs/model_assertions.json`. They guard
-high-signal relationships such as Paulo Costa staying above lower-snapshot LHW
-contenders, Islam remaining welterweight #1, and head-to-head relationships
-that should not regress during tuning. The assertion script can also write JSON
-with `--out=PATH`, which the tuner uses as a constraint score.
-
-## Project Status
-
-This is an early frontend and modeling prototype. The frontend still uses
-hardcoded ranking data, while the v0.8 context and round-dominance ranking model
-is a separate generated pipeline under `scripts/build-rankings-model.mjs`. The
-latest modeling pass adds configurable weight files and automated tuning, but
-the app has not yet been wired to consume generated model output directly. The
-methodology content in the app is not final and is marked as placeholder where
-appropriate.
+The core idea is not just "make UFC rankings." The project builds a reproducible ranking engine where every major ranking movement can be inspected, tested, and challenged.
