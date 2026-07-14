@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-03T02:08:41.013Z",
-  "rankings_as_of": "2026-06-30",
+  "generated_at": "2026-07-14T00:59:08.379Z",
+  "rankings_as_of": "2026-07-13",
   "model_version": "v0.8.7-division-carryover",
   "source": "ufcstats.com",
   "model_summary": {
-    "generated_at": "2026-07-03T02:08:40.303Z",
-    "as_of": "2026-06-30",
-    "processed_fights": 8272,
+    "generated_at": "2026-07-14T00:59:07.281Z",
+    "as_of": "2026-07-13",
+    "processed_fights": 8286,
     "skipped_fights": 149,
     "ranked_fighters": 176,
     "division_count": 11,
@@ -17,16 +17,16 @@
     ]
   },
   "input_summary": {
-    "events": 753,
-    "fights": 8534,
-    "fighter_stat_rows": 17068,
-    "round_stat_rows": 40662,
-    "fighters": 2554,
+    "events": 754,
+    "fights": 8548,
+    "fighter_stat_rows": 17096,
+    "round_stat_rows": 40712,
+    "fighters": 2556,
     "annotations": 43,
     "current_snapshot_divisions": 11,
     "title_context_divisions": 6,
     "division_context_moves": 3,
-    "source_data_end_date": "2026-06-30"
+    "source_data_end_date": "2026-07-13"
   },
   "model_settings": {
     "k_factor": 32,
@@ -67,27 +67,27 @@
     "score_confidence": "Adjacent final-score gaps are labeled as virtual ties, close pairs, or clear separations so rank order is not over-read when scores are tightly packed."
   },
   "backtest_summary": {
-    "fights": 1268,
-    "correct": 764,
-    "accuracy": 0.6025,
-    "expected_correct": 701.51,
-    "average_favorite_probability": 0.5532,
-    "average_winner_probability": 0.5137,
-    "calibration_error": 0.0493,
-    "brier_score": 0.2411,
-    "log_loss": 0.6752,
-    "validation_score": 510.31,
-    "average_winner_rating_gap": 9.67,
-    "favorite_wins": 764,
-    "underdog_wins": 504,
-    "underdog_win_rate": 0.3975
+    "fights": 1282,
+    "correct": 775,
+    "accuracy": 0.6045,
+    "expected_correct": 709.37,
+    "average_favorite_probability": 0.5533,
+    "average_winner_probability": 0.5139,
+    "calibration_error": 0.0512,
+    "brier_score": 0.2409,
+    "log_loss": 0.6748,
+    "validation_score": 512.18,
+    "average_winner_rating_gap": 9.81,
+    "favorite_wins": 775,
+    "underdog_wins": 507,
+    "underdog_win_rate": 0.3955
   },
   "audit_summary": {
     "champion_failures": 0,
     "title_context_failures": 0,
     "recent_head_to_head_violations": 0,
     "elite_snapshot_drift": 0,
-    "justified_elite_snapshot_drift": 4,
+    "justified_elite_snapshot_drift": 5,
     "inactive_top_ranked": 0,
     "prospect_overboost": 0,
     "old_opponent_overcredit": 0,
@@ -96,18 +96,18 @@
     "data_quality_flags": 0
   },
   "evaluation_summary": {
-    "fights": 1268,
-    "accuracy": 0.6025,
-    "upset_rate": 0.3975,
-    "brier_score": 0.2411,
-    "log_loss": 0.6752,
-    "calibration_error": 0.0493,
-    "validation_score": 510.31,
-    "virtual_tie_pairs": 49,
-    "close_pairs": 23,
+    "fights": 1282,
+    "accuracy": 0.6045,
+    "upset_rate": 0.3955,
+    "brier_score": 0.2409,
+    "log_loss": 0.6748,
+    "calibration_error": 0.0512,
+    "validation_score": 512.18,
+    "virtual_tie_pairs": 54,
+    "close_pairs": 20,
     "high_risk_bands": 32,
     "hard_audit_failures": 0,
-    "fragile_fighters": 0,
-    "max_rank_move": 2
+    "fragile_fighters": 6,
+    "max_rank_move": 6
   }
 }

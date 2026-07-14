@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-03T02:08:41.012Z",
-  "rankings_as_of": "2026-06-30",
+  "generated_at": "2026-07-14T00:59:08.379Z",
+  "rankings_as_of": "2026-07-13",
   "rankings_model_version": "v0.8.7-division-carryover",
   "summary": {
     "divisions": 11,
     "fighters": 176,
-    "review_flags": 221,
+    "review_flags": 229,
     "high_priority_review_flags": 7
   },
   "divisions": [
@@ -56,8 +56,8 @@
           "rank": 2,
           "model_rank": 2,
           "fighter_name": "Alexandre Pantoja",
-          "final_score": 1759.72,
-          "model_score": 1705.22,
+          "final_score": 1759.59,
+          "model_score": 1705.09,
           "policy_total": 54.5,
           "explanation": "With our OctagonRank model, Alexandre Pantoja sits as the #2 contender in Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -87,6 +87,11 @@
               "key": "recent_outcome_adjustment",
               "label": "Latest result",
               "value": -9
+            },
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": -0.13
             }
           ],
           "policy_components": [
@@ -96,7 +101,13 @@
               "value": 54.5
             }
           ],
-          "penalties": []
+          "penalties": [
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": 0.13
+            }
+          ]
         },
         {
           "rank": 3,
@@ -242,12 +253,63 @@
         },
         {
           "rank": 6,
+          "model_rank": 7,
+          "fighter_name": "Brandon Royval",
+          "final_score": 1631.22,
+          "model_score": 1580.22,
+          "policy_total": 51,
+          "explanation": "With our OctagonRank model, Brandon Royval sits as the #6 contender in Flyweight because they have stayed active enough for the ranking to stay fresh and their recent run has been strong. The main thing holding them back is less control in the fight stats. The ranking rules also keep the current division picture in the calculation.",
+          "top_positive_drivers": [
+            {
+              "key": "recent_activity_adjustment",
+              "label": "Recent activity",
+              "value": 16
+            },
+            {
+              "key": "recent_form_adjustment",
+              "label": "Recent form",
+              "value": 10.31
+            },
+            {
+              "key": "quality_win_adjustment",
+              "label": "Best-win quality",
+              "value": 8.03
+            },
+            {
+              "key": "finish_adjustment",
+              "label": "Finish rate",
+              "value": 0.83
+            }
+          ],
+          "top_negative_drivers": [
+            {
+              "key": "dominance_adjustment",
+              "label": "Fight dominance",
+              "value": -0.88
+            },
+            {
+              "key": "round_dominance_adjustment",
+              "label": "Round dominance",
+              "value": -0.26
+            }
+          ],
+          "policy_components": [
+            {
+              "key": "current_context_prior",
+              "label": "Current snapshot prior",
+              "value": 51
+            }
+          ],
+          "penalties": []
+        },
+        {
+          "rank": 7,
           "model_rank": 6,
           "fighter_name": "Asu Almabayev",
           "final_score": 1626.02,
           "model_score": 1627.02,
           "policy_total": -1,
-          "explanation": "With our OctagonRank model, Asu Almabayev sits as the #6 contender in Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Asu Almabayev sits as the #7 contender in Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
@@ -298,63 +360,12 @@
           ]
         },
         {
-          "rank": 7,
-          "model_rank": 8,
-          "fighter_name": "Loneer Kavanagh",
-          "final_score": 1609.05,
-          "model_score": 1572.95,
-          "policy_total": 36.1,
-          "explanation": "With our OctagonRank model, Loneer Kavanagh sits as the #7 contender in Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is fewer separation wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
-          "top_positive_drivers": [
-            {
-              "key": "recent_form_adjustment",
-              "label": "Recent form",
-              "value": 21.63
-            },
-            {
-              "key": "recent_activity_adjustment",
-              "label": "Recent activity",
-              "value": 16
-            },
-            {
-              "key": "quality_win_adjustment",
-              "label": "Best-win quality",
-              "value": 11.07
-            },
-            {
-              "key": "dominance_adjustment",
-              "label": "Fight dominance",
-              "value": 0.13
-            }
-          ],
-          "top_negative_drivers": [
-            {
-              "key": "finish_adjustment",
-              "label": "Finish rate",
-              "value": -8
-            }
-          ],
-          "policy_components": [
-            {
-              "key": "current_context_prior",
-              "label": "Current snapshot prior",
-              "value": 33.5
-            },
-            {
-              "key": "snapshot_order_adjustment",
-              "label": "Snapshot-order tiebreaker",
-              "value": 2.6
-            }
-          ],
-          "penalties": []
-        },
-        {
           "rank": 8,
           "model_rank": 10,
           "fighter_name": "Alex Perez",
-          "final_score": 1608.95,
+          "final_score": 1605.07,
           "model_score": 1543.9,
-          "policy_total": 65.05,
+          "policy_total": 61.17,
           "explanation": "With our OctagonRank model, Alex Perez sits as the #8 contender in Flyweight because they have stayed active enough for the ranking to stay fresh and the fight stats show they have controlled more of their minutes. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also use recent direct fights as a tiebreaker. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -399,7 +410,7 @@
             {
               "key": "head_to_head_adjustment",
               "label": "Head-to-head resolver",
-              "value": 49.05
+              "value": 45.17
             }
           ],
           "penalties": [
@@ -414,9 +425,9 @@
           "rank": 9,
           "model_rank": 11,
           "fighter_name": "Charles Johnson",
-          "final_score": 1607.7,
+          "final_score": 1603.82,
           "model_score": 1539,
-          "policy_total": 68.7,
+          "policy_total": 64.82,
           "explanation": "With our OctagonRank model, Charles Johnson sits as the #9 contender in Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -467,23 +478,84 @@
               "key": "rank_guard_adjustment",
               "label": "Rank guard",
               "value": 24.32
-            },
-            {
-              "key": "head_to_head_adjustment",
-              "label": "Head-to-head resolver",
-              "value": 3.88
             }
           ],
           "penalties": []
         },
         {
           "rank": 10,
+          "model_rank": 12,
+          "fighter_name": "Loneer Kavanagh",
+          "final_score": 1603.57,
+          "model_score": 1531.14,
+          "policy_total": 72.43,
+          "explanation": "With our OctagonRank model, Loneer Kavanagh sits as the #10 contender in Flyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
+          "top_positive_drivers": [
+            {
+              "key": "recent_activity_adjustment",
+              "label": "Recent activity",
+              "value": 16
+            },
+            {
+              "key": "quality_win_adjustment",
+              "label": "Best-win quality",
+              "value": 11.07
+            },
+            {
+              "key": "recent_form_adjustment",
+              "label": "Recent form",
+              "value": 9.92
+            }
+          ],
+          "top_negative_drivers": [
+            {
+              "key": "recent_outcome_adjustment",
+              "label": "Latest result",
+              "value": -9
+            },
+            {
+              "key": "finish_adjustment",
+              "label": "Finish rate",
+              "value": -8
+            },
+            {
+              "key": "round_dominance_adjustment",
+              "label": "Round dominance",
+              "value": -0.5
+            },
+            {
+              "key": "dominance_adjustment",
+              "label": "Fight dominance",
+              "value": -0.41
+            }
+          ],
+          "policy_components": [
+            {
+              "key": "current_context_prior",
+              "label": "Current snapshot prior",
+              "value": 33.5
+            },
+            {
+              "key": "rank_guard_adjustment",
+              "label": "Rank guard",
+              "value": 26.2
+            },
+            {
+              "key": "head_to_head_adjustment",
+              "label": "Head-to-head resolver",
+              "value": 12.73
+            }
+          ],
+          "penalties": []
+        },
+        {
+          "rank": 11,
           "model_rank": 9,
           "fighter_name": "Brandon Moreno",
           "final_score": 1602.32,
           "model_score": 1572.32,
           "policy_total": 30,
-          "explanation": "With our OctagonRank model, Brandon Moreno sits as the #10 contender in Flyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Brandon Moreno sits as the #11 contender in Flyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_activity_adjustment",
@@ -544,13 +616,13 @@
           ]
         },
         {
-          "rank": 11,
-          "model_rank": 7,
+          "rank": 12,
+          "model_rank": 8,
           "fighter_name": "Sumudaerji",
           "final_score": 1589.34,
           "model_score": 1576.84,
           "policy_total": 12.5,
-          "explanation": "With our OctagonRank model, Sumudaerji sits as the #11 contender in Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
+          "explanation": "With our OctagonRank model, Sumudaerji sits as the #12 contender in Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
@@ -590,57 +662,6 @@
               "key": "current_context_prior",
               "label": "Current snapshot prior",
               "value": 12.5
-            }
-          ],
-          "penalties": []
-        },
-        {
-          "rank": 12,
-          "model_rank": 12,
-          "fighter_name": "Brandon Royval",
-          "final_score": 1588.73,
-          "model_score": 1537.73,
-          "policy_total": 51,
-          "explanation": "With our OctagonRank model, Brandon Royval sits as the #12 contender in Flyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
-          "top_positive_drivers": [
-            {
-              "key": "recent_activity_adjustment",
-              "label": "Recent activity",
-              "value": 16
-            },
-            {
-              "key": "quality_win_adjustment",
-              "label": "Best-win quality",
-              "value": 8.03
-            }
-          ],
-          "top_negative_drivers": [
-            {
-              "key": "recent_outcome_adjustment",
-              "label": "Latest result",
-              "value": -9
-            },
-            {
-              "key": "recent_form_adjustment",
-              "label": "Recent form",
-              "value": -1.39
-            },
-            {
-              "key": "dominance_adjustment",
-              "label": "Fight dominance",
-              "value": -1.17
-            },
-            {
-              "key": "round_dominance_adjustment",
-              "label": "Round dominance",
-              "value": -0.49
-            }
-          ],
-          "policy_components": [
-            {
-              "key": "current_context_prior",
-              "label": "Current snapshot prior",
-              "value": 51
             }
           ],
           "penalties": []
@@ -1073,11 +1094,57 @@
         {
           "rank": 5,
           "model_rank": 5,
+          "fighter_name": "Mario Bautista",
+          "final_score": 1729.28,
+          "model_score": 1692.28,
+          "policy_total": 37,
+          "explanation": "With our OctagonRank model, Mario Bautista sits as the #5 contender in Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is fewer separation wins. The ranking rules also keep the current division picture in the calculation.",
+          "top_positive_drivers": [
+            {
+              "key": "recent_form_adjustment",
+              "label": "Recent form",
+              "value": 32.75
+            },
+            {
+              "key": "recent_activity_adjustment",
+              "label": "Recent activity",
+              "value": 16
+            },
+            {
+              "key": "quality_win_adjustment",
+              "label": "Best-win quality",
+              "value": 9.77
+            },
+            {
+              "key": "dominance_adjustment",
+              "label": "Fight dominance",
+              "value": 3.35
+            }
+          ],
+          "top_negative_drivers": [
+            {
+              "key": "finish_adjustment",
+              "label": "Finish rate",
+              "value": -0.4
+            }
+          ],
+          "policy_components": [
+            {
+              "key": "current_context_prior",
+              "label": "Current snapshot prior",
+              "value": 37
+            }
+          ],
+          "penalties": []
+        },
+        {
+          "rank": 6,
+          "model_rank": 6,
           "fighter_name": "Raoni Barcelos",
           "final_score": 1714.09,
           "model_score": 1673.59,
           "policy_total": 40.5,
-          "explanation": "With our OctagonRank model, Raoni Barcelos sits as the #5 contender in Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is fewer separation wins. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Raoni Barcelos sits as the #6 contender in Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is fewer separation wins. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
@@ -1117,51 +1184,11 @@
           "penalties": []
         },
         {
-          "rank": 6,
-          "model_rank": 6,
-          "fighter_name": "Mario Bautista",
-          "final_score": 1709.57,
-          "model_score": 1672.57,
-          "policy_total": 37,
-          "explanation": "With our OctagonRank model, Mario Bautista sits as the #6 contender in Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The ranking rules also keep the current division picture in the calculation.",
-          "top_positive_drivers": [
-            {
-              "key": "recent_form_adjustment",
-              "label": "Recent form",
-              "value": 29.19
-            },
-            {
-              "key": "recent_activity_adjustment",
-              "label": "Recent activity",
-              "value": 16
-            },
-            {
-              "key": "quality_win_adjustment",
-              "label": "Best-win quality",
-              "value": 9.77
-            },
-            {
-              "key": "dominance_adjustment",
-              "label": "Fight dominance",
-              "value": 2.65
-            }
-          ],
-          "top_negative_drivers": [],
-          "policy_components": [
-            {
-              "key": "current_context_prior",
-              "label": "Current snapshot prior",
-              "value": 37
-            }
-          ],
-          "penalties": []
-        },
-        {
           "rank": 7,
           "model_rank": 7,
           "fighter_name": "Song Yadong",
-          "final_score": 1661.98,
-          "model_score": 1628.48,
+          "final_score": 1661.66,
+          "model_score": 1628.16,
           "policy_total": 33.5,
           "explanation": "With our OctagonRank model, Song Yadong sits as the #7 contender in Bantamweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is a colder recent run. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -1195,7 +1222,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -1.53
+              "value": -1.85
             }
           ],
           "policy_components": [
@@ -1209,75 +1236,64 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 1.53
+              "value": 1.85
             }
           ]
         },
         {
           "rank": 8,
-          "model_rank": 13,
-          "fighter_name": "Cory Sandhagen",
-          "final_score": 1635.72,
-          "model_score": 1591.72,
-          "policy_total": 44,
-          "explanation": "With our OctagonRank model, Cory Sandhagen sits as the #8 contender in Bantamweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
+          "model_rank": 10,
+          "fighter_name": "Farid Basharat",
+          "final_score": 1635.08,
+          "model_score": 1615.58,
+          "policy_total": 19.5,
+          "explanation": "With our OctagonRank model, Farid Basharat sits as the #8 contender in Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
+            {
+              "key": "recent_form_adjustment",
+              "label": "Recent form",
+              "value": 34.74
+            },
             {
               "key": "recent_activity_adjustment",
               "label": "Recent activity",
-              "value": 12
+              "value": 16
+            },
+            {
+              "key": "dominance_adjustment",
+              "label": "Fight dominance",
+              "value": 3.18
             },
             {
               "key": "quality_win_adjustment",
               "label": "Best-win quality",
-              "value": 11.84
-            },
-            {
-              "key": "elite_resume_adjustment",
-              "label": "Elite resume",
-              "value": 6.84
-            },
-            {
-              "key": "finish_adjustment",
-              "label": "Finish rate",
-              "value": 1.89
+              "value": 2.97
             }
           ],
           "top_negative_drivers": [
             {
-              "key": "legacy_penalty",
-              "label": "Legacy decay",
-              "value": -11.4
+              "key": "schedule_strength_adjustment",
+              "label": "Schedule strength",
+              "value": -30
             },
             {
-              "key": "recent_form_adjustment",
-              "label": "Recent form",
-              "value": -10.1
-            },
-            {
-              "key": "recent_outcome_adjustment",
-              "label": "Latest result",
-              "value": -4.5
+              "key": "finish_adjustment",
+              "label": "Finish rate",
+              "value": -4.4
             }
           ],
           "policy_components": [
             {
               "key": "current_context_prior",
               "label": "Current snapshot prior",
-              "value": 44
+              "value": 19.5
             }
           ],
-          "penalties": [
-            {
-              "key": "legacy_penalty",
-              "label": "Legacy decay",
-              "value": 11.4
-            }
-          ]
+          "penalties": []
         },
         {
           "rank": 9,
-          "model_rank": 11,
+          "model_rank": 12,
           "fighter_name": "Payton Talbott",
           "final_score": 1631.43,
           "model_score": 1599.83,
@@ -1328,7 +1344,7 @@
         },
         {
           "rank": 10,
-          "model_rank": 10,
+          "model_rank": 11,
           "fighter_name": "David Martinez",
           "final_score": 1631.33,
           "model_score": 1614.63,
@@ -1492,63 +1508,74 @@
         },
         {
           "rank": 13,
-          "model_rank": 12,
-          "fighter_name": "Farid Basharat",
-          "final_score": 1614.6,
-          "model_score": 1595.1,
-          "policy_total": 19.5,
-          "explanation": "With our OctagonRank model, Farid Basharat sits as the #13 contender in Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation.",
+          "model_rank": 15,
+          "fighter_name": "Cory Sandhagen",
+          "final_score": 1598.36,
+          "model_score": 1554.36,
+          "policy_total": 44,
+          "explanation": "With our OctagonRank model, Cory Sandhagen sits as the #13 contender in Bantamweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
-            {
-              "key": "recent_form_adjustment",
-              "label": "Recent form",
-              "value": 31.73
-            },
             {
               "key": "recent_activity_adjustment",
               "label": "Recent activity",
-              "value": 12
+              "value": 16
             },
             {
               "key": "quality_win_adjustment",
               "label": "Best-win quality",
-              "value": 2.97
+              "value": 11.84
             },
             {
-              "key": "dominance_adjustment",
-              "label": "Fight dominance",
-              "value": 2.47
-            }
-          ],
-          "top_negative_drivers": [
-            {
-              "key": "schedule_strength_adjustment",
-              "label": "Schedule strength",
-              "value": -30
+              "key": "elite_resume_adjustment",
+              "label": "Elite resume",
+              "value": 6.22
             },
             {
               "key": "finish_adjustment",
               "label": "Finish rate",
-              "value": -3.6
+              "value": 1.2
+            }
+          ],
+          "top_negative_drivers": [
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": -23.5
+            },
+            {
+              "key": "recent_form_adjustment",
+              "label": "Recent form",
+              "value": -20.86
+            },
+            {
+              "key": "recent_outcome_adjustment",
+              "label": "Latest result",
+              "value": -4.5
             }
           ],
           "policy_components": [
             {
               "key": "current_context_prior",
               "label": "Current snapshot prior",
-              "value": 19.5
+              "value": 44
             }
           ],
-          "penalties": []
+          "penalties": [
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": 23.5
+            }
+          ]
         },
         {
           "rank": 14,
-          "model_rank": 14,
+          "model_rank": 13,
           "fighter_name": "Aiemann Zahabi",
           "final_score": 1595.43,
           "model_score": 1582.93,
           "policy_total": 12.5,
-          "explanation": "With our OctagonRank model, Aiemann Zahabi sits as the #14 contender in Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Aiemann Zahabi sits as the #14 contender in Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
@@ -1604,7 +1631,7 @@
         },
         {
           "rank": 15,
-          "model_rank": 15,
+          "model_rank": 14,
           "fighter_name": "Bryce Mitchell",
           "final_score": 1561.17,
           "model_score": 1578.17,
@@ -1718,8 +1745,8 @@
           "rank": 1,
           "model_rank": 1,
           "fighter_name": "Alexander Volkanovski",
-          "final_score": 1845.66,
-          "model_score": 1750.66,
+          "final_score": 1845.34,
+          "model_score": 1750.34,
           "policy_total": 95,
           "explanation": "With our OctagonRank model, Alexander Volkanovski sits as the Featherweight champion because their elite resume still carries real weight and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also use champion status as the division baseline.",
           "top_positive_drivers": [
@@ -1748,7 +1775,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -31.89
+              "value": -32.21
             },
             {
               "key": "finish_adjustment",
@@ -1767,7 +1794,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 31.89
+              "value": 32.21
             }
           ]
         },
@@ -2339,8 +2366,8 @@
           "rank": 13,
           "model_rank": 11,
           "fighter_name": "Yair Rodriguez",
-          "final_score": 1624.46,
-          "model_score": 1608.46,
+          "final_score": 1622.86,
+          "model_score": 1606.86,
           "policy_total": 16,
           "explanation": "With our OctagonRank model, Yair Rodriguez sits as the #13 contender in Featherweight because their best win grades well and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is the time since their last fight. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -2369,12 +2396,12 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": -7.76
+              "value": -9.04
             },
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -3.43
+              "value": -3.75
             },
             {
               "key": "finish_adjustment",
@@ -2398,12 +2425,12 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 7.76
+              "value": 9.04
             },
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 3.43
+              "value": 3.75
             }
           ]
         },
@@ -2572,11 +2599,11 @@
       "fighters": [
         {
           "rank": 1,
-          "model_rank": 5,
+          "model_rank": 4,
           "fighter_name": "Justin Gaethje",
           "final_score": 1808.45,
-          "model_score": 1672.93,
-          "policy_total": 135.52,
+          "model_score": 1672.61,
+          "policy_total": 135.84,
           "explanation": "With our OctagonRank model, Justin Gaethje sits as the Lightweight champion because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also use champion status as the division baseline. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -2604,7 +2631,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -28.27
+              "value": -28.59
             }
           ],
           "policy_components": [
@@ -2616,14 +2643,14 @@
             {
               "key": "title_guard_adjustment",
               "label": "Champion guard",
-              "value": 40.52
+              "value": 40.84
             }
           ],
           "penalties": [
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 28.27
+              "value": 28.59
             }
           ]
         },
@@ -2722,8 +2749,8 @@
           "rank": 4,
           "model_rank": 2,
           "fighter_name": "Charles Oliveira",
-          "final_score": 1789.85,
-          "model_score": 1742.35,
+          "final_score": 1789.53,
+          "model_score": 1742.03,
           "policy_total": 47.5,
           "explanation": "With our OctagonRank model, Charles Oliveira sits as the #4 contender in Lightweight because their best win grades well and their elite resume still carries real weight. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -2752,7 +2779,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -0.5
+              "value": -0.82
             }
           ],
           "policy_components": [
@@ -2766,58 +2793,18 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 0.5
+              "value": 0.82
             }
           ]
         },
         {
           "rank": 5,
-          "model_rank": 3,
-          "fighter_name": "Benoit Saint Denis",
-          "final_score": 1749.98,
-          "model_score": 1709.48,
-          "policy_total": 40.5,
-          "explanation": "With our OctagonRank model, Benoit Saint Denis sits as the #5 contender in Lightweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The ranking rules also keep the current division picture in the calculation.",
-          "top_positive_drivers": [
-            {
-              "key": "recent_form_adjustment",
-              "label": "Recent form",
-              "value": 23.79
-            },
-            {
-              "key": "recent_activity_adjustment",
-              "label": "Recent activity",
-              "value": 16
-            },
-            {
-              "key": "quality_win_adjustment",
-              "label": "Best-win quality",
-              "value": 14.79
-            },
-            {
-              "key": "finish_adjustment",
-              "label": "Finish rate",
-              "value": 11.24
-            }
-          ],
-          "top_negative_drivers": [],
-          "policy_components": [
-            {
-              "key": "current_context_prior",
-              "label": "Current snapshot prior",
-              "value": 40.5
-            }
-          ],
-          "penalties": []
-        },
-        {
-          "rank": 6,
           "model_rank": 15,
           "fighter_name": "Max Holloway",
-          "final_score": 1710.59,
+          "final_score": 1711.94,
           "model_score": 1576.64,
-          "policy_total": 133.95,
-          "explanation": "With our OctagonRank model, Max Holloway sits as the #6 contender in Lightweight because their elite resume still carries real weight and their recent run has been strong. The main thing holding them back is their latest result. The ranking rules also keep recent title-fight results close to the front of the line. This spot is close enough that one strong result could move them quickly.",
+          "policy_total": 135.3,
+          "explanation": "With our OctagonRank model, Max Holloway sits as the #5 contender in Lightweight because their elite resume still carries real weight and their recent run has been strong. The main thing holding them back is their latest result. The ranking rules also keep recent title-fight results close to the front of the line. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "elite_resume_adjustment",
@@ -2871,24 +2858,29 @@
             {
               "key": "title_context_adjustment",
               "label": "Title-context policy",
-              "value": 65.43
+              "value": 81.21
             },
             {
               "key": "rank_guard_adjustment",
               "label": "Rank guard",
-              "value": 24.52
+              "value": 7.54
+            },
+            {
+              "key": "snapshot_order_adjustment",
+              "label": "Snapshot-order tiebreaker",
+              "value": 2.55
             }
           ],
           "penalties": []
         },
         {
-          "rank": 7,
-          "model_rank": 6,
+          "rank": 6,
+          "model_rank": 5,
           "fighter_name": "Mateusz Gamrot",
-          "final_score": 1709.19,
+          "final_score": 1711.94,
           "model_score": 1670.89,
-          "policy_total": 38.3,
-          "explanation": "With our OctagonRank model, Mateusz Gamrot sits as the #7 contender in Lightweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
+          "policy_total": 41.05,
+          "explanation": "With our OctagonRank model, Mateusz Gamrot sits as the #6 contender in Lightweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_activity_adjustment",
@@ -2921,24 +2913,24 @@
             {
               "key": "snapshot_order_adjustment",
               "label": "Snapshot-order tiebreaker",
-              "value": 1.3
+              "value": 4.05
             }
           ],
           "penalties": []
         },
         {
-          "rank": 8,
-          "model_rank": 4,
-          "fighter_name": "Quillan Salkilld",
-          "final_score": 1709.09,
-          "model_score": 1693.09,
-          "policy_total": 16,
-          "explanation": "With our OctagonRank model, Quillan Salkilld sits as the #8 contender in Lightweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
+          "rank": 7,
+          "model_rank": 10,
+          "fighter_name": "Mauricio Ruffy",
+          "final_score": 1711.94,
+          "model_score": 1627.7,
+          "policy_total": 84.24,
+          "explanation": "With our OctagonRank model, Mauricio Ruffy sits as the #7 contender in Lightweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The ranking rules also prevent one noisy signal from dropping an established contender too far. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
               "label": "Recent form",
-              "value": 39.6
+              "value": 33.76
             },
             {
               "key": "recent_activity_adjustment",
@@ -2946,14 +2938,14 @@
               "value": 16
             },
             {
-              "key": "quality_win_adjustment",
-              "label": "Best-win quality",
-              "value": 11.68
-            },
-            {
               "key": "finish_adjustment",
               "label": "Finish rate",
               "value": 10.8
+            },
+            {
+              "key": "dominance_adjustment",
+              "label": "Fight dominance",
+              "value": 6.28
             }
           ],
           "top_negative_drivers": [],
@@ -2961,18 +2953,78 @@
             {
               "key": "current_context_prior",
               "label": "Current snapshot prior",
+              "value": 33.5
+            },
+            {
+              "key": "rank_guard_adjustment",
+              "label": "Rank guard",
+              "value": 41.06
+            },
+            {
+              "key": "snapshot_order_adjustment",
+              "label": "Snapshot-order tiebreaker",
+              "value": 9.68
+            }
+          ],
+          "penalties": []
+        },
+        {
+          "rank": 8,
+          "model_rank": 6,
+          "fighter_name": "Paddy Pimblett",
+          "final_score": 1711.84,
+          "model_score": 1670.76,
+          "policy_total": 41.08,
+          "explanation": "With our OctagonRank model, Paddy Pimblett sits as the #8 contender in Lightweight because their best win grades well and their recent run has been strong. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
+          "top_positive_drivers": [
+            {
+              "key": "quality_win_adjustment",
+              "label": "Best-win quality",
+              "value": 22.98
+            },
+            {
+              "key": "recent_form_adjustment",
+              "label": "Recent form",
+              "value": 21
+            },
+            {
+              "key": "recent_activity_adjustment",
+              "label": "Recent activity",
               "value": 16
+            },
+            {
+              "key": "finish_adjustment",
+              "label": "Finish rate",
+              "value": 7.6
+            }
+          ],
+          "top_negative_drivers": [],
+          "policy_components": [
+            {
+              "key": "current_context_prior",
+              "label": "Current snapshot prior",
+              "value": 30
+            },
+            {
+              "key": "rank_guard_adjustment",
+              "label": "Rank guard",
+              "value": 3
+            },
+            {
+              "key": "head_to_head_adjustment",
+              "label": "Head-to-head resolver",
+              "value": 8.08
             }
           ],
           "penalties": []
         },
         {
           "rank": 9,
-          "model_rank": 7,
+          "model_rank": 8,
           "fighter_name": "Renato Moicano",
-          "final_score": 1689.07,
+          "final_score": 1711.84,
           "model_score": 1658.07,
-          "policy_total": 31,
+          "policy_total": 53.77,
           "explanation": "With our OctagonRank model, Renato Moicano sits as the #9 contender in Lightweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -3006,80 +3058,80 @@
             {
               "key": "rank_guard_adjustment",
               "label": "Rank guard",
-              "value": 4.5
+              "value": 20.69
+            },
+            {
+              "key": "head_to_head_adjustment",
+              "label": "Head-to-head resolver",
+              "value": 6.58
             }
           ],
           "penalties": []
         },
         {
           "rank": 10,
-          "model_rank": 10,
-          "fighter_name": "Paddy Pimblett",
-          "final_score": 1687.57,
-          "model_score": 1610.55,
-          "policy_total": 77.02,
-          "explanation": "With our OctagonRank model, Paddy Pimblett sits as the #10 contender in Lightweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is their latest result. The ranking rules also prevent one noisy signal from dropping an established contender too far. This spot is close enough that one strong result could move them quickly.",
+          "model_rank": 7,
+          "fighter_name": "Benoit Saint Denis",
+          "final_score": 1710.59,
+          "model_score": 1659.85,
+          "policy_total": 50.74,
+          "explanation": "With our OctagonRank model, Benoit Saint Denis sits as the #10 contender in Lightweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_activity_adjustment",
               "label": "Recent activity",
-              "value": 12
+              "value": 16
             },
             {
               "key": "quality_win_adjustment",
               "label": "Best-win quality",
-              "value": 10.83
+              "value": 14.79
             },
             {
               "key": "recent_form_adjustment",
               "label": "Recent form",
-              "value": 8.37
+              "value": 11.16
             },
             {
               "key": "finish_adjustment",
               "label": "Finish rate",
-              "value": 6.6
+              "value": 9.6
             }
           ],
           "top_negative_drivers": [
             {
               "key": "recent_outcome_adjustment",
               "label": "Latest result",
-              "value": -4.5
-            },
-            {
-              "key": "dominance_adjustment",
-              "label": "Fight dominance",
-              "value": -0.29
+              "value": -9
             }
           ],
           "policy_components": [
             {
               "key": "current_context_prior",
               "label": "Current snapshot prior",
-              "value": 30
+              "value": 40.5
             },
             {
               "key": "rank_guard_adjustment",
               "label": "Rank guard",
-              "value": 47.02
+              "value": 10.24
             }
           ],
           "penalties": []
         },
         {
           "rank": 11,
-          "model_rank": 9,
-          "fighter_name": "Mauricio Ruffy",
-          "final_score": 1686.07,
-          "model_score": 1627.7,
-          "policy_total": 58.37,
-          "explanation": "With our OctagonRank model, Mauricio Ruffy sits as the #11 contender in Lightweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
+          "model_rank": 3,
+          "fighter_name": "Quillan Salkilld",
+          "final_score": 1709.09,
+          "model_score": 1693.09,
+          "policy_total": 16,
+          "explanation": "With our OctagonRank model, Quillan Salkilld sits as the #11 contender in Lightweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
               "label": "Recent form",
-              "value": 33.76
+              "value": 39.6
             },
             {
               "key": "recent_activity_adjustment",
@@ -3087,14 +3139,14 @@
               "value": 16
             },
             {
+              "key": "quality_win_adjustment",
+              "label": "Best-win quality",
+              "value": 11.68
+            },
+            {
               "key": "finish_adjustment",
               "label": "Finish rate",
               "value": 10.8
-            },
-            {
-              "key": "dominance_adjustment",
-              "label": "Fight dominance",
-              "value": 6.28
             }
           ],
           "top_negative_drivers": [],
@@ -3102,19 +3154,14 @@
             {
               "key": "current_context_prior",
               "label": "Current snapshot prior",
-              "value": 33.5
-            },
-            {
-              "key": "rank_guard_adjustment",
-              "label": "Rank guard",
-              "value": 24.87
+              "value": 16
             }
           ],
           "penalties": []
         },
         {
           "rank": 12,
-          "model_rank": 8,
+          "model_rank": 9,
           "fighter_name": "Tom Nolan",
           "final_score": 1638.71,
           "model_score": 1629.71,
@@ -3165,12 +3212,12 @@
         },
         {
           "rank": 13,
-          "model_rank": 13,
+          "model_rank": 14,
           "fighter_name": "Rafael Fiziev",
-          "final_score": 1612.51,
-          "model_score": 1593.01,
+          "final_score": 1607.9,
+          "model_score": 1588.4,
           "policy_total": 19.5,
-          "explanation": "With our OctagonRank model, Rafael Fiziev sits as the #13 contender in Lightweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is fewer separation wins. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Rafael Fiziev sits as the #13 contender in Lightweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is fewer separation wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_activity_adjustment",
@@ -3180,7 +3227,7 @@
             {
               "key": "quality_win_adjustment",
               "label": "Best-win quality",
-              "value": 9.99
+              "value": 5.38
             },
             {
               "key": "recent_form_adjustment",
@@ -3221,7 +3268,7 @@
           "final_score": 1606.88,
           "model_score": 1601.38,
           "policy_total": 5.5,
-          "explanation": "With our OctagonRank model, Manuel Torres sits as the #14 contender in Lightweight because their best win grades well and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Manuel Torres sits as the #14 contender in Lightweight because their best win grades well and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "quality_win_adjustment",
@@ -3262,10 +3309,10 @@
         },
         {
           "rank": 15,
-          "model_rank": 14,
+          "model_rank": 13,
           "fighter_name": "Beneil Dariush",
-          "final_score": 1602.22,
-          "model_score": 1589.72,
+          "final_score": 1601.9,
+          "model_score": 1589.4,
           "policy_total": 12.5,
           "explanation": "With our OctagonRank model, Beneil Dariush sits as the #15 contender in Lightweight because they have stayed active enough for the ranking to stay fresh and their elite resume still carries real weight. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -3294,7 +3341,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -32.47
+              "value": -32.79
             },
             {
               "key": "recent_form_adjustment",
@@ -3323,7 +3370,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 32.47
+              "value": 32.79
             }
           ]
         },
@@ -3626,9 +3673,9 @@
           "rank": 6,
           "model_rank": 8,
           "fighter_name": "Jack Della Maddalena",
-          "final_score": 1752.07,
+          "final_score": 1750.27,
           "model_score": 1656.35,
-          "policy_total": 95.72,
+          "policy_total": 93.92,
           "explanation": "With our OctagonRank model, Jack Della Maddalena sits as the #6 contender in Welterweight because their best win grades well and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is their latest result. The ranking rules also keep recent title-fight results close to the front of the line. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -3673,7 +3720,7 @@
             {
               "key": "title_context_adjustment",
               "label": "Title-context policy",
-              "value": 51.72
+              "value": 49.92
             }
           ],
           "penalties": []
@@ -3682,15 +3729,15 @@
           "rank": 7,
           "model_rank": 5,
           "fighter_name": "Kamaru Usman",
-          "final_score": 1750.57,
-          "model_score": 1724.07,
+          "final_score": 1748.77,
+          "model_score": 1722.27,
           "policy_total": 26.5,
           "explanation": "With our OctagonRank model, Kamaru Usman sits as the #7 contender in Welterweight because their elite resume still carries real weight and their recent run has been strong. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "elite_resume_adjustment",
               "label": "Elite resume",
-              "value": 17.77
+              "value": 17.57
             },
             {
               "key": "recent_form_adjustment",
@@ -3712,17 +3759,17 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -49.89
+              "value": -50.21
+            },
+            {
+              "key": "inactivity_penalty",
+              "label": "Inactivity penalty",
+              "value": -2.83
             },
             {
               "key": "finish_adjustment",
               "label": "Finish rate",
               "value": -1.73
-            },
-            {
-              "key": "inactivity_penalty",
-              "label": "Inactivity penalty",
-              "value": -1.55
             }
           ],
           "policy_components": [
@@ -3736,12 +3783,12 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 1.55
+              "value": 2.83
             },
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 49.89
+              "value": 50.21
             }
           ]
         },
@@ -4033,8 +4080,8 @@
           "rank": 14,
           "model_rank": 15,
           "fighter_name": "Leon Edwards",
-          "final_score": 1630.05,
-          "model_score": 1600.05,
+          "final_score": 1629.73,
+          "model_score": 1599.73,
           "policy_total": 30,
           "explanation": "With our OctagonRank model, Leon Edwards sits as the #14 contender in Welterweight because their best win grades well and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
@@ -4063,7 +4110,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -40.74
+              "value": -41.06
             },
             {
               "key": "recent_form_adjustment",
@@ -4092,7 +4139,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 40.74
+              "value": 41.06
             }
           ]
         },
@@ -4349,8 +4396,8 @@
           "rank": 4,
           "model_rank": 2,
           "fighter_name": "Dricus Du Plessis",
-          "final_score": 1781.71,
-          "model_score": 1730.71,
+          "final_score": 1781.58,
+          "model_score": 1730.58,
           "policy_total": 51,
           "explanation": "With our OctagonRank model, Dricus Du Plessis sits as the #4 contender in Middleweight because their best win grades well and their recent run has been strong. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -4380,6 +4427,11 @@
               "key": "recent_outcome_adjustment",
               "label": "Latest result",
               "value": -4.5
+            },
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": -0.13
             }
           ],
           "policy_components": [
@@ -4389,7 +4441,13 @@
               "value": 51
             }
           ],
-          "penalties": []
+          "penalties": [
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": 0.13
+            }
+          ]
         },
         {
           "rank": 5,
@@ -4815,8 +4873,8 @@
           "rank": 14,
           "model_rank": 15,
           "fighter_name": "Israel Adesanya",
-          "final_score": 1590.81,
-          "model_score": 1560.81,
+          "final_score": 1590.49,
+          "model_score": 1560.49,
           "policy_total": 30,
           "explanation": "With our OctagonRank model, Israel Adesanya sits as the #14 contender in Middleweight because their elite resume still carries real weight and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -4845,7 +4903,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -45.4
+              "value": -45.72
             },
             {
               "key": "recent_form_adjustment",
@@ -4874,7 +4932,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 45.4
+              "value": 45.72
             }
           ]
         },
@@ -5313,12 +5371,12 @@
             {
               "key": "head_to_head_adjustment",
               "label": "Head-to-head resolver",
-              "value": 21.43
+              "value": 21.33
             },
             {
               "key": "snapshot_order_adjustment",
               "label": "Snapshot-order tiebreaker",
-              "value": 13.39
+              "value": 13.49
             }
           ],
           "penalties": [
@@ -5435,9 +5493,9 @@
           "rank": 9,
           "model_rank": 5,
           "fighter_name": "Azamat Murzakanov",
-          "final_score": 1618.72,
+          "final_score": 1618.62,
           "model_score": 1620.6,
-          "policy_total": -1.88,
+          "policy_total": -1.98,
           "explanation": "With our OctagonRank model, Azamat Murzakanov sits as the #9 contender in Light Heavyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is the need for another recent elite win. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
             {
@@ -5465,7 +5523,7 @@
             {
               "key": "top_contender_credibility_penalty",
               "label": "Top-contender credibility",
-              "value": -31.88
+              "value": -31.98
             },
             {
               "key": "recent_outcome_adjustment",
@@ -5484,7 +5542,7 @@
             {
               "key": "top_contender_credibility_penalty",
               "label": "Top-contender credibility",
-              "value": 31.88
+              "value": 31.98
             }
           ]
         },
@@ -5492,9 +5550,9 @@
           "rank": 10,
           "model_rank": 3,
           "fighter_name": "Dustin Jacoby",
-          "final_score": 1612.72,
-          "model_score": 1637.98,
-          "policy_total": -25.26,
+          "final_score": 1612.3,
+          "model_score": 1637.66,
+          "policy_total": -25.36,
           "explanation": "With our OctagonRank model, Dustin Jacoby sits as the #10 contender in Light Heavyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is the need for another recent elite win. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
             {
@@ -5522,12 +5580,12 @@
             {
               "key": "top_contender_credibility_penalty",
               "label": "Top-contender credibility",
-              "value": -44.76
+              "value": -44.86
             },
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -8.61
+              "value": -8.93
             }
           ],
           "policy_components": [
@@ -5541,12 +5599,12 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 8.61
+              "value": 8.93
             },
             {
               "key": "top_contender_credibility_penalty",
               "label": "Top-contender credibility",
-              "value": 44.76
+              "value": 44.86
             }
           ]
         },
@@ -5554,10 +5612,10 @@
           "rank": 11,
           "model_rank": 11,
           "fighter_name": "Jan Blachowicz",
-          "final_score": 1603.79,
-          "model_score": 1563.29,
+          "final_score": 1603.47,
+          "model_score": 1562.97,
           "policy_total": 40.5,
-          "explanation": "With our OctagonRank model, Jan Blachowicz sits as the #11 contender in Light Heavyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Jan Blachowicz sits as the #11 contender in Light Heavyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_activity_adjustment",
@@ -5584,7 +5642,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -39.34
+              "value": -39.66
             },
             {
               "key": "recent_form_adjustment",
@@ -5608,7 +5666,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 39.34
+              "value": 39.66
             }
           ]
         },
@@ -5786,8 +5844,8 @@
           "rank": 15,
           "model_rank": 15,
           "fighter_name": "Jamahal Hill",
-          "final_score": 1505.79,
-          "model_score": 1461.79,
+          "final_score": 1504.51,
+          "model_score": 1460.51,
           "policy_total": 44,
           "explanation": "With our OctagonRank model, Jamahal Hill sits as the #15 contender in Light Heavyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is a colder recent run. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -5840,7 +5898,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 0.86
+              "value": 2.14
             },
             {
               "key": "legacy_penalty",
@@ -6062,9 +6120,9 @@
           "rank": 4,
           "model_rank": 5,
           "fighter_name": "Alexander Volkov",
-          "final_score": 1752.96,
+          "final_score": 1752.64,
           "model_score": 1692.85,
-          "policy_total": 60.11,
+          "policy_total": 59.79,
           "explanation": "With our OctagonRank model, Alexander Volkov sits as the #4 contender in Heavyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -6104,7 +6162,7 @@
             {
               "key": "head_to_head_adjustment",
               "label": "Head-to-head resolver",
-              "value": 9.11
+              "value": 8.79
             }
           ],
           "penalties": [
@@ -6119,8 +6177,8 @@
           "rank": 5,
           "model_rank": 4,
           "fighter_name": "Sergei Pavlovich",
-          "final_score": 1751.71,
-          "model_score": 1704.21,
+          "final_score": 1751.39,
+          "model_score": 1703.89,
           "policy_total": 47.5,
           "explanation": "With our OctagonRank model, Sergei Pavlovich sits as the #5 contender in Heavyweight because their recent run has been strong and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
@@ -6149,7 +6207,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -1.71
+              "value": -2.03
             }
           ],
           "policy_components": [
@@ -6163,7 +6221,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 1.71
+              "value": 2.03
             }
           ]
         },
@@ -6257,8 +6315,8 @@
           "rank": 8,
           "model_rank": 8,
           "fighter_name": "Curtis Blaydes",
-          "final_score": 1659.63,
-          "model_score": 1619.13,
+          "final_score": 1659.31,
+          "model_score": 1618.81,
           "policy_total": 40.5,
           "explanation": "With our OctagonRank model, Curtis Blaydes sits as the #8 contender in Heavyweight because they have stayed active enough for the ranking to stay fresh and their elite resume still carries real weight. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -6287,7 +6345,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -31.76
+              "value": -32.08
             },
             {
               "key": "recent_outcome_adjustment",
@@ -6311,7 +6369,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 31.76
+              "value": 32.08
             }
           ]
         },
@@ -6624,8 +6682,8 @@
           "rank": 15,
           "model_rank": 14,
           "fighter_name": "Mick Parkin",
-          "final_score": 1535.22,
-          "model_score": 1555.72,
+          "final_score": 1533.94,
+          "model_score": 1554.44,
           "policy_total": -20.5,
           "explanation": "With our OctagonRank model, Mick Parkin sits as the #15 contender in Heavyweight because they have stayed active enough for the ranking to stay fresh and their recent run has been strong. The main thing holding them back is the time since their last fight.",
           "top_positive_drivers": [
@@ -6654,7 +6712,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": -9.83
+              "value": -11.11
             },
             {
               "key": "finish_adjustment",
@@ -6683,7 +6741,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 9.83
+              "value": 11.11
             }
           ]
         },
@@ -6804,8 +6862,8 @@
           "model_rank": 2,
           "fighter_name": "Zhang Weili",
           "final_score": 1729.14,
-          "model_score": 1663.56,
-          "policy_total": 65.58,
+          "model_score": 1661.82,
+          "policy_total": 67.32,
           "explanation": "With our OctagonRank model, Zhang Weili sits as the #2 contender in Women's Strawweight because their recent run has been strong and their elite resume still carries real weight. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -6816,7 +6874,7 @@
             {
               "key": "elite_resume_adjustment",
               "label": "Elite resume",
-              "value": 11.82
+              "value": 11.68
             },
             {
               "key": "recent_activity_adjustment",
@@ -6833,12 +6891,12 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -34.48
+              "value": -34.8
             },
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": -13.97
+              "value": -15.25
             },
             {
               "key": "finish_adjustment",
@@ -6855,19 +6913,19 @@
             {
               "key": "head_to_head_adjustment",
               "label": "Head-to-head resolver",
-              "value": 11.08
+              "value": 12.82
             }
           ],
           "penalties": [
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 13.97
+              "value": 15.25
             },
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 34.48
+              "value": 34.8
             }
           ]
         },
@@ -7060,8 +7118,8 @@
           "model_rank": 13,
           "fighter_name": "Yan Xiaonan",
           "final_score": 1614.5,
-          "model_score": 1554.29,
-          "policy_total": 60.21,
+          "model_score": 1553.01,
+          "policy_total": 61.49,
           "explanation": "With our OctagonRank model, Yan Xiaonan sits as the #7 contender in Women's Strawweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is a colder recent run. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -7092,14 +7150,14 @@
               "value": -10.4
             },
             {
+              "key": "inactivity_penalty",
+              "label": "Inactivity penalty",
+              "value": -9.04
+            },
+            {
               "key": "legacy_penalty",
               "label": "Legacy decay",
               "value": -9
-            },
-            {
-              "key": "inactivity_penalty",
-              "label": "Inactivity penalty",
-              "value": -7.76
             },
             {
               "key": "finish_adjustment",
@@ -7116,14 +7174,14 @@
             {
               "key": "head_to_head_adjustment",
               "label": "Head-to-head resolver",
-              "value": 16.21
+              "value": 17.49
             }
           ],
           "penalties": [
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 7.76
+              "value": 9.04
             },
             {
               "key": "legacy_penalty",
@@ -8060,12 +8118,12 @@
         },
         {
           "rank": 9,
-          "model_rank": 9,
+          "model_rank": 10,
           "fighter_name": "Miranda Maverick",
-          "final_score": 1595.02,
-          "model_score": 1568.52,
-          "policy_total": 26.5,
-          "explanation": "With our OctagonRank model, Miranda Maverick sits as the #9 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation.",
+          "final_score": 1595.9,
+          "model_score": 1567.24,
+          "policy_total": 28.66,
+          "explanation": "With our OctagonRank model, Miranda Maverick sits as the #9 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
@@ -8095,6 +8153,11 @@
               "value": -24
             },
             {
+              "key": "inactivity_penalty",
+              "label": "Inactivity penalty",
+              "value": -2.83
+            },
+            {
               "key": "recent_outcome_adjustment",
               "label": "Latest result",
               "value": -2.7
@@ -8103,11 +8166,6 @@
               "key": "finish_adjustment",
               "label": "Finish rate",
               "value": -2.4
-            },
-            {
-              "key": "inactivity_penalty",
-              "label": "Inactivity penalty",
-              "value": -1.55
             }
           ],
           "policy_components": [
@@ -8115,24 +8173,80 @@
               "key": "current_context_prior",
               "label": "Current snapshot prior",
               "value": 26.5
+            },
+            {
+              "key": "rank_guard_adjustment",
+              "label": "Rank guard",
+              "value": 2.16
             }
           ],
           "penalties": [
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 1.55
+              "value": 2.83
             }
           ]
         },
         {
           "rank": 10,
+          "model_rank": 9,
+          "fighter_name": "Wang Cong",
+          "final_score": 1594.4,
+          "model_score": 1578.4,
+          "policy_total": 16,
+          "explanation": "With our OctagonRank model, Wang Cong sits as the #10 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
+          "top_positive_drivers": [
+            {
+              "key": "recent_form_adjustment",
+              "label": "Recent form",
+              "value": 33.02
+            },
+            {
+              "key": "recent_activity_adjustment",
+              "label": "Recent activity",
+              "value": 16
+            },
+            {
+              "key": "dominance_adjustment",
+              "label": "Fight dominance",
+              "value": 8.05
+            },
+            {
+              "key": "round_dominance_adjustment",
+              "label": "Round dominance",
+              "value": 4.18
+            }
+          ],
+          "top_negative_drivers": [
+            {
+              "key": "schedule_strength_adjustment",
+              "label": "Schedule strength",
+              "value": -30
+            },
+            {
+              "key": "finish_adjustment",
+              "label": "Finish rate",
+              "value": -3.6
+            }
+          ],
+          "policy_components": [
+            {
+              "key": "current_context_prior",
+              "label": "Current snapshot prior",
+              "value": 16
+            }
+          ],
+          "penalties": []
+        },
+        {
+          "rank": 11,
           "model_rank": 8,
           "fighter_name": "Casey O'Neill",
           "final_score": 1580.63,
           "model_score": 1585.13,
           "policy_total": -4.5,
-          "explanation": "With our OctagonRank model, Casey O'Neill sits as the #10 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is the need for another recent elite win. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Casey O'Neill sits as the #11 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is the need for another recent elite win. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
@@ -8183,78 +8297,11 @@
           ]
         },
         {
-          "rank": 11,
-          "model_rank": 10,
-          "fighter_name": "Wang Cong",
-          "final_score": 1556.51,
-          "model_score": 1566.51,
-          "policy_total": -10,
-          "explanation": "With our OctagonRank model, Wang Cong sits as the #11 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule.",
-          "top_positive_drivers": [
-            {
-              "key": "recent_form_adjustment",
-              "label": "Recent form",
-              "value": 22.19
-            },
-            {
-              "key": "recent_activity_adjustment",
-              "label": "Recent activity",
-              "value": 16
-            },
-            {
-              "key": "dominance_adjustment",
-              "label": "Fight dominance",
-              "value": 9.01
-            },
-            {
-              "key": "round_dominance_adjustment",
-              "label": "Round dominance",
-              "value": 4.56
-            }
-          ],
-          "top_negative_drivers": [
-            {
-              "key": "schedule_strength_adjustment",
-              "label": "Schedule strength",
-              "value": -15.22
-            },
-            {
-              "key": "finish_adjustment",
-              "label": "Finish rate",
-              "value": -2.4
-            },
-            {
-              "key": "inactivity_penalty",
-              "label": "Inactivity penalty",
-              "value": -2.24
-            }
-          ],
-          "policy_components": [
-            {
-              "key": "current_context_prior",
-              "label": "Current snapshot prior",
-              "value": 16
-            },
-            {
-              "key": "entry_gate_penalty",
-              "label": "Entry gate",
-              "value": 26
-            }
-          ],
-          "penalties": [
-            {
-              "key": "inactivity_penalty",
-              "label": "Inactivity penalty",
-              "value": 2.24
-            }
-          ]
-        },
-        {
           "rank": 12,
           "model_rank": 12,
           "fighter_name": "Eduarda Moura",
-          "final_score": 1540,
-          "model_score": 1557.5,
+          "final_score": 1539.93,
+          "model_score": 1557.43,
           "policy_total": -17.5,
           "explanation": "With our OctagonRank model, Eduarda Moura sits as the #12 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is fewer separation wins. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
@@ -8284,6 +8331,11 @@
               "key": "finish_adjustment",
               "label": "Finish rate",
               "value": -8
+            },
+            {
+              "key": "inactivity_penalty",
+              "label": "Inactivity penalty",
+              "value": -0.07
             }
           ],
           "policy_components": [
@@ -8298,7 +8350,13 @@
               "value": 30
             }
           ],
-          "penalties": []
+          "penalties": [
+            {
+              "key": "inactivity_penalty",
+              "label": "Inactivity penalty",
+              "value": 0.07
+            }
+          ]
         },
         {
           "rank": 13,
@@ -8358,7 +8416,7 @@
           "final_score": 1523.8,
           "model_score": 1518.8,
           "policy_total": 5,
-          "explanation": "With our OctagonRank model, Karine Silva sits as the #14 contender in Women's Flyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
+          "explanation": "With our OctagonRank model, Karine Silva sits as the #14 contender in Women's Flyweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
             {
               "key": "recent_activity_adjustment",
@@ -8420,69 +8478,12 @@
         },
         {
           "rank": 15,
-          "model_rank": 16,
-          "fighter_name": "Tracy Cortez",
-          "final_score": 1523.78,
-          "model_score": 1493.78,
-          "policy_total": 30,
-          "explanation": "With our OctagonRank model, Tracy Cortez sits as the #15 contender in Women's Flyweight because they have stayed active enough for the ranking to stay fresh and the round-by-round numbers back up the placement. The main thing holding them back is a colder recent run. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
-          "top_positive_drivers": [
-            {
-              "key": "recent_activity_adjustment",
-              "label": "Recent activity",
-              "value": 12
-            },
-            {
-              "key": "round_dominance_adjustment",
-              "label": "Round dominance",
-              "value": 0.67
-            }
-          ],
-          "top_negative_drivers": [
-            {
-              "key": "recent_form_adjustment",
-              "label": "Recent form",
-              "value": -11.13
-            },
-            {
-              "key": "legacy_penalty",
-              "label": "Legacy decay",
-              "value": -9.99
-            },
-            {
-              "key": "recent_outcome_adjustment",
-              "label": "Latest result",
-              "value": -9
-            },
-            {
-              "key": "finish_adjustment",
-              "label": "Finish rate",
-              "value": -8
-            }
-          ],
-          "policy_components": [
-            {
-              "key": "current_context_prior",
-              "label": "Current snapshot prior",
-              "value": 30
-            }
-          ],
-          "penalties": [
-            {
-              "key": "legacy_penalty",
-              "label": "Legacy decay",
-              "value": 9.99
-            }
-          ]
-        },
-        {
-          "rank": 16,
           "model_rank": 15,
           "fighter_name": "Gabriella Fernandes",
           "final_score": 1501.24,
           "model_score": 1495.74,
           "policy_total": 5.5,
-          "explanation": "With our OctagonRank model, Gabriella Fernandes sits as the #16 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation.",
+          "explanation": "With our OctagonRank model, Gabriella Fernandes sits as the #15 contender in Women's Flyweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
             {
               "key": "recent_form_adjustment",
@@ -8525,6 +8526,63 @@
             }
           ],
           "penalties": []
+        },
+        {
+          "rank": 16,
+          "model_rank": 16,
+          "fighter_name": "Tracy Cortez",
+          "final_score": 1495.81,
+          "model_score": 1465.81,
+          "policy_total": 30,
+          "explanation": "With our OctagonRank model, Tracy Cortez sits as the #16 contender in Women's Flyweight because they have stayed active enough for the ranking to stay fresh and the round-by-round numbers back up the placement. The main thing holding them back is older wins being discounted more than recent wins. The ranking rules also keep the current division picture in the calculation.",
+          "top_positive_drivers": [
+            {
+              "key": "recent_activity_adjustment",
+              "label": "Recent activity",
+              "value": 16
+            },
+            {
+              "key": "round_dominance_adjustment",
+              "label": "Round dominance",
+              "value": 0.19
+            }
+          ],
+          "top_negative_drivers": [
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": -25.45
+            },
+            {
+              "key": "recent_form_adjustment",
+              "label": "Recent form",
+              "value": -21.96
+            },
+            {
+              "key": "finish_adjustment",
+              "label": "Finish rate",
+              "value": -8
+            },
+            {
+              "key": "recent_outcome_adjustment",
+              "label": "Latest result",
+              "value": -4.5
+            }
+          ],
+          "policy_components": [
+            {
+              "key": "current_context_prior",
+              "label": "Current snapshot prior",
+              "value": 30
+            }
+          ],
+          "penalties": [
+            {
+              "key": "legacy_penalty",
+              "label": "Legacy decay",
+              "value": 25.45
+            }
+          ]
         }
       ]
     },
@@ -8535,8 +8593,8 @@
           "rank": 1,
           "model_rank": 1,
           "fighter_name": "Kayla Harrison",
-          "final_score": 1740.96,
-          "model_score": 1645.96,
+          "final_score": 1739.68,
+          "model_score": 1644.68,
           "policy_total": 95,
           "explanation": "With our OctagonRank model, Kayla Harrison sits as the Women's Bantamweight champion because their recent run has been strong and the fight stats show they have controlled more of their minutes. The main thing holding them back is the time since their last fight. The ranking rules also use champion status as the division baseline.",
           "top_positive_drivers": [
@@ -8565,7 +8623,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": -2.24
+              "value": -3.52
             }
           ],
           "policy_components": [
@@ -8579,7 +8637,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 2.24
+              "value": 3.52
             }
           ]
         },
@@ -8786,8 +8844,8 @@
           "rank": 6,
           "model_rank": 7,
           "fighter_name": "Julianna Peña",
-          "final_score": 1610.71,
-          "model_score": 1566.71,
+          "final_score": 1609.43,
+          "model_score": 1565.43,
           "policy_total": 44,
           "explanation": "With our OctagonRank model, Julianna Peña sits as the #6 contender in Women's Bantamweight because their best win grades well and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is their latest result. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -8821,7 +8879,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": -2.24
+              "value": -3.52
             },
             {
               "key": "recent_form_adjustment",
@@ -8845,7 +8903,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 2.24
+              "value": 3.52
             }
           ]
         },
@@ -9012,9 +9070,9 @@
           "rank": 10,
           "model_rank": 14,
           "fighter_name": "Jacqueline Cavalcanti",
-          "final_score": 1572.16,
+          "final_score": 1570.56,
           "model_score": 1530.79,
-          "policy_total": 41.37,
+          "policy_total": 39.77,
           "explanation": "With our OctagonRank model, Jacqueline Cavalcanti sits as the #10 contender in Women's Bantamweight because their recent run has been strong and they have stayed active enough for the ranking to stay fresh. The main thing holding them back is a lighter recent schedule. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
             {
@@ -9064,7 +9122,7 @@
             {
               "key": "rank_guard_adjustment",
               "label": "Rank guard",
-              "value": 7.87
+              "value": 6.27
             }
           ],
           "penalties": []
@@ -9073,8 +9131,8 @@
           "rank": 11,
           "model_rank": 8,
           "fighter_name": "Raquel Pennington",
-          "final_score": 1570.66,
-          "model_score": 1565.16,
+          "final_score": 1569.06,
+          "model_score": 1563.56,
           "policy_total": 5.5,
           "explanation": "With our OctagonRank model, Raquel Pennington sits as the #11 contender in Women's Bantamweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is the time since their last fight. The ranking rules also keep the current division picture in the calculation. This spot is close enough that one strong result could move them quickly.",
           "top_positive_drivers": [
@@ -9103,7 +9161,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": -26.39
+              "value": -27.67
             },
             {
               "key": "finish_adjustment",
@@ -9113,7 +9171,7 @@
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": -4.12
+              "value": -4.44
             }
           ],
           "policy_components": [
@@ -9127,12 +9185,12 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 26.39
+              "value": 27.67
             },
             {
               "key": "legacy_penalty",
               "label": "Legacy decay",
-              "value": 4.12
+              "value": 4.44
             }
           ]
         },
@@ -9303,8 +9361,8 @@
           "rank": 15,
           "model_rank": 16,
           "fighter_name": "Irene Aldana",
-          "final_score": 1493.25,
-          "model_score": 1477.25,
+          "final_score": 1491.97,
+          "model_score": 1475.97,
           "policy_total": 16,
           "explanation": "With our OctagonRank model, Irene Aldana sits as the #15 contender in Women's Bantamweight because they have stayed active enough for the ranking to stay fresh and their best win grades well. The main thing holding them back is the time since their last fight. The ranking rules also keep the current division picture in the calculation.",
           "top_positive_drivers": [
@@ -9323,7 +9381,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": -28.46
+              "value": -29.74
             },
             {
               "key": "recent_form_adjustment",
@@ -9352,7 +9410,7 @@
             {
               "key": "inactivity_penalty",
               "label": "Inactivity penalty",
-              "value": 28.46
+              "value": 29.74
             },
             {
               "key": "legacy_penalty",
